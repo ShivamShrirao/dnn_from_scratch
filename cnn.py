@@ -11,7 +11,7 @@ class conv_net:
 	def init_kernel(self, kernel_size, num_inp_channels, num_kernels):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
 		weights = 0.1*np.random.randn(*shape)
-		bias = 0.2*np.random.randn(num_kernels,1)
+		bias = 0.2*np.random.randn(1,num_kernels)
 		return weights, bias
 
 	def __str__(self):
@@ -54,7 +54,7 @@ class conv_net:
 		return ad
 
 	def conv2d(self,inp,kernels,biases,strides=[1,1,1,1],padding=1):
-		#inp[num,x,y,d],kernels(d,ksz,ksz,num),biases[num,1],strides[batch,x,y,d]
+		#inp[num,x,y,d],kernels(d,ksz,ksz,num),biases[1,num],strides[batch,x,y,d]
 		output=[]
 		ksz=kernels.shape[1]
 		out_x,out_y=((inp.shape[1]-ksz+2*padding)//strides[1]+1),((inp.shape[2]-ksz+2*padding)//strides[2]+1)
@@ -62,11 +62,13 @@ class conv_net:
 		for img in inp:		#img[d,x,y]
 			padded=np.zeros((img.shape[0],img.shape[1]+2*padding,img.shape[2]+2*padding))
 			padded[:,padding:-padding,padding:-padding]=img
+			img=""
 			out=[]
 			for j in range(0,out_y,strides[2]):
 				for i in range(0,out_x,strides[1]):
-					out.append(np.dot(padded[:,i:i+ksz,j:j+ksz].reshape(1,-1),kernels.reshape(-1,kernels.shape[3]))[0])
+					out.append((np.dot(padded[:,i:i+ksz,j:j+ksz].reshape(1,-1),kernels.reshape(-1,kernels.shape[3]))+biases)[0])
 			output.append(np.array(out).reshape(out_x,out_y,kernels.shape[3]))
 		return np.array(output)
-	# def backprop(self, y):
-		
+
+	def conv2d_back(self,inp,kernels,biases):
+		pass

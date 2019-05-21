@@ -8,7 +8,7 @@ np.random.seed(sd)	#470
 class conv_net:
 	# def __init__(self):
 
-	def init_kernel(self, kernel_size, num_inp_channels, num_kernels):
+	def init_kernel(self, num_inp_channels, kernel_size, num_kernels):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
 		weights = 0.1*np.random.randn(*shape)
 		bias = 0.2*np.random.randn(1,num_kernels)
@@ -53,22 +53,24 @@ class conv_net:
 		ad=ad*gamma+beta				# recover
 		return ad
 
-	def conv2d(self,inp,kernels,biases,strides=[1,1,1,1],padding=1):
-		#inp[num,x,y,d],kernels(d,ksz,ksz,num),biases[1,num],strides[batch,x,y,d]
+	def conv2d(self,inp,kernels,biases,strides=[1,1],padding=1):
+		#inp[num,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],strides[row,col]
+		inp=inp.transpose(0,3,1,2)	#inp[num,d,row,col]
 		output=[]
 		ksz=kernels.shape[1]
-		out_x,out_y=((inp.shape[1]-ksz+2*padding)//strides[1]+1),((inp.shape[2]-ksz+2*padding)//strides[2]+1)
-		inp=inp.transpose(0,3,1,2)
-		for img in inp:		#img[d,x,y]
+		out_row,out_col=((inp.shape[2]-ksz+2*padding)//strides[0]+1),((inp.shape[3]-ksz+2*padding)//strides[1]+1)
+		for img in inp:		#img[d,row,col]
 			padded=np.zeros((img.shape[0],img.shape[1]+2*padding,img.shape[2]+2*padding))
 			padded[:,padding:-padding,padding:-padding]=img
-			img=""
-			out=[]
-			for j in range(0,out_y,strides[2]):
-				for i in range(0,out_x,strides[1]):
-					out.append((np.dot(padded[:,i:i+ksz,j:j+ksz].reshape(1,-1),kernels.reshape(-1,kernels.shape[3]))+biases)[0])
-			output.append(np.array(out).reshape(out_x,out_y,kernels.shape[3]))
+			# Take all windows into a matrix
+			d,row,col=padded.shape
+			window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(d)[:,None]*row*col
+			slider=(np.arange(out_row)[:,None]*row+np.arange(out_col))
+			# (out_row*out_col, ksz*ksz*d) . (ksz,ksz,depth,num_ker)
+			out=(np.dot(np.take(padded, window.ravel()+slider[::strides[0],::strides[1]].ravel()[:,None]), kernels.reshape(-1,kernels.shape[3])))
+			out=(out+biases).reshape(out_row,out_col,kernels.shape[3])
+			output.append(out)
 		return np.array(output)
 
-	def conv2d_back(self,inp,kernels,biases):
+	def conv2d_back(self,error,inp,kernels,biases):
 		pass

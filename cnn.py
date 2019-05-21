@@ -67,7 +67,7 @@ class conv_net:
 			d,row,col=padded.shape
 			window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(d)[:,None]*row*col
 			slider=(np.arange(out_row)[:,None]*row+np.arange(out_col))
-			# windows(out_row*out_col, ksz*ksz*d) . kernels(ksz*ksz*depth,num_ker)
+			# windows(out_row*out_col, ksz*ksz*d) . kernels(d*ksz*ksz,num_ker)
 			out=(np.dot(np.take(padded, window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]), kernels.reshape(-1,kernels.shape[3])))
 			out=(out+biases).reshape(out_row,out_col,kernels.shape[3])
 			output.append(out)
@@ -79,29 +79,42 @@ class conv_net:
 		errors=errors.reshape(-1,num_ker).repeat(inp.shape[3],axis=0).reshape(esz,esz,inp.shape[3],num_ker)
 		errors=errors.transpose(2,0,1,3)	#errors[d,esz,esz,num_ker]
 		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
+		flipped=np.flip(kernels,(1,2)).transpose(0,3,1,2)	#flipped[d,num_ker,ksz,ksz]
+		ksz=flipped.shape[2]
 		d_kernels=[]
 		d_inputs=[]
 		out_row,out_col=((inp.shape[2]-esz+2*padding)//stride[0]+1),((inp.shape[3]-esz+2*padding)//stride[1]+1)
+		_,d,er_r,er_c=inp.shape
 		for img in inp:		#img[d,row,col]
+			# Backprop for kernels.
 			padded=np.zeros((img.shape[0],img.shape[1]+2*padding,img.shape[2]+2*padding))
 			padded[:,padding:-padding,padding:-padding]=img
 			# Take all windows into a matrix
 			d,row,col=padded.shape
 			window=(np.arange(esz)[:,None]*row+np.arange(esz)).ravel()+np.arange(d)[:,None]*row*col
 			slider=(np.arange(out_row)[:,None]*row+np.arange(out_col))
-			# windows(out_row*out_col, esz*esz*d) . errors(depth*esz*esz,num_ker)
+			# windows(out_row*out_col, esz*esz*d) . errors(d*esz*esz,num_ker)
 			d_ker=(np.dot(np.take(padded, window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]), errors.reshape(-1,num_ker)))
 			d_ker=d_ker.reshape(out_row,out_col,d,num_ker)
 			d_kernels.append(d_ker)
 
-			padded=np.zeros((errors.shape[0],errors.shape[1]+2*padding,errors.shape[2]+2*padding))
-			padded[:,padding:-padding,padding:-padding]=errors
-			# Take all windows into a matrix
-			d,row,col=padded.shape
-			window=(np.arange(esz)[:,None]*row+np.arange(esz)).ravel()+np.arange(d)[:,None]*row*col
-			slider=(np.arange(out_row)[:,None]*row+np.arange(out_col))
-			# windows(out_row*out_col, esz*esz*d) . errors(esz*esz,num_ker)
-			d_ker=(np.dot(np.take(padded, window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]), errors.reshape(-1,errors.shape[3])))
-			# d_ker=(d_ker+biases).reshape(out_row,out_col,errors.shape[3])
+			# Backprop for inp.		errors[d,esz,esz,num_ker]
+			errors=errors.transpose(0,3,1,2)	#errors[d,num_kernel,esz,esz]
+			d_inp=[]
+			for channel,flip in zip(errors,flipped):	#channel[num_ker,esz,esz], flip[num_ker,ksz,ksz]
+				padded=np.zeros((num_ker,esz+2*padding,esz+2*padding))
+				padded[:,padding:-padding,padding:-padding]=channel
+				# Take all windows into a matrix
+				num_ker,row,col=padded.shape
+				window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(num_ker)[:,None]*row*col
+				slider=(np.arange(er_r)[:,None]*row+np.arange(er_c))
+				# windows(er_r*er_c, ksz*ksz*num_ker) . flip(num_ker*ksz*ksz,1)
+				d_chnl=(np.dot(np.take(padded, window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]), flip.reshape(-1,1)))
+				d_chnl=d_chnl.reshape(er_r,er_c)
+				d_inp.append(d_chnl)
+			# d_inp[d,row,col]
+			d_inp=np.array(d_inp).transpose(1,2,0)
+			# d_inp[row,col,d]
 			d_inputs.append(d_inp)
-		return np.array(d_kernels),np.array(d_inputs)
+
+		return np.array(d_kernels)*learning_rate,np.array(d_inputs)*learning_rate

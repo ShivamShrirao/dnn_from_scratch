@@ -35,6 +35,12 @@ class conv_net:
 		exps = np.exp(x-np.max(x))
 		return exps/np.sum(exps)
 
+	def normalize(self,x):
+		mn=x.min()
+		mx=x.max()
+		x = (x-mn)/(mx-mn)
+		return x
+
 	# def soft_der(self,x,y):
 	# 	# return -x*y
 	# 	return 1
@@ -73,7 +79,7 @@ class conv_net:
 			output.append(out)
 		return np.array(output)	#output[batches,out_row,out_col,num_ker]
 
-	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],padding=1):								#strides[batch,row,col,depth]
+	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],padding=1,layer=1):								#strides[batch,row,col,depth]
 		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
 		batches,esz,esz,num_ker=errors.shape
 		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
@@ -87,8 +93,11 @@ class conv_net:
 			#d_kernels[d,ksz,ksz,num_ker]
 		d_kernels/=batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_ker]	flipped[num_ker,ksz,ksz,d]
-		d_inputs=self.conv2d(errors,flipped)
-		d_bias=errors.reshape(-1,8).mean(axis=0)[None,:]
+		if layer:
+			d_inputs=self.conv2d(errors,flipped,0)
+		else:
+			d_inputs=0
+		d_bias=errors.reshape(-1,num_ker).mean(axis=0)[None,:]
 
 		return d_inputs*self.learning_rate, d_kernels*self.learning_rate, d_bias*self.learning_rate
 
@@ -115,14 +124,14 @@ class conv_net:
 
 	def max_pool_back(self,errors,inp,max_index,ksize=[2,2],stride=[2,2]):
 		#errors[batches,esz,esz,d],inp[batches,row,col,d],kernels[ksz,ksz],stride[row,col]
-		errors=errors.transpose(0,3,1,2)	#errors[batches,d,row,col]
+		errors=errors.transpose(0,3,1,2)	#errors[batches,d,esz,esz]
 		d_inputs=[]
 		batches,row,col,d=inp.shape
 		iml=row*col*d
 		for error,max_ind in zip(errors,max_index):		#error[d,esz,esz]
 			d_img=np.zeros(iml)
 			np.add.at(d_img,max_ind,error.ravel())
-			d_img.reshape(d,row,col)		#d_img[d,row,col]
+			d_img=d_img.reshape(d,row,col)		#d_img[d,row,col]
 			d_inputs.append(d_img)
 
-		return np.array(d_inputs).transpose(0,2,3,1)
+		return (np.array(d_inputs).transpose(0,2,3,1))*self.learning_rate

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 
-sd=470#np.random.randint(1000)
+sd=np.random.randint(1000)
 # print(sd)
 np.random.seed(sd)	#470
 
@@ -99,7 +99,7 @@ class conv_net:
 			d_inputs=0
 		d_bias=errors.reshape(-1,num_ker).mean(axis=0)[None,:]
 
-		return d_inputs*self.learning_rate, d_kernels*self.learning_rate, d_bias*self.learning_rate
+		return d_inputs, d_kernels*self.learning_rate, d_bias*self.learning_rate
 
 	def max_pool(self,inp,ksize=[2,2],stride=[2,2]):
 		#inp[batches,row,col,d], kernels[ksz,ksz], stride[row,col]
@@ -134,4 +134,4 @@ class conv_net:
 			d_img=d_img.reshape(d,row,col)		#d_img[d,row,col]
 			d_inputs.append(d_img)
 
-		return (np.array(d_inputs).transpose(0,2,3,1))*self.learning_rate
+		return (np.array(d_inputs).transpose(0,2,3,1))

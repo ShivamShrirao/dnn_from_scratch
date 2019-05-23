@@ -20,10 +20,22 @@ class neural_net:
 		return str(self.__dict__)
 
 	def sigmoid(self,x):
+		x=np.clip(x,-500,500)
 		return 1.0/(1+np.exp(-x))
 
 	def sigmoid_der(self,x,y):
 		return x * (1 - x)
+
+	def elliot_function( signal, derivative=False ):
+		""" A fast approximation of sigmoid """
+		s = 1 # steepness
+		
+		abs_signal = (1 + np.abs(signal * s))
+		if derivative:
+			return 0.5 * s / abs_signal**2
+		else:
+			# Return the activation signal
+			return 0.5*(signal * s) / abs_signal + 0.5
 
 	def relu(self,x):
 		return x*(x>0)
@@ -33,18 +45,17 @@ class neural_net:
 
 	def softmax(self,x):
 		# exps = np.exp(x)
-		exps = np.exp(x-np.max(x))
-		return exps/np.sum(exps)
+		exps = np.exp(x-np.max(x, axis=1, keepdims = True))
+		return exps/np.sum(exps, axis=1, keepdims = True)
 
 	def soft_der(self,x,y):
-		# return -x*y
-		return 1
+		return np.ones(self.softmax(x).shape)
 
 	def del_cross_soft(self,out,res):
 		res = res.argmax(axis=1)
 		m = res.shape[0]
 		grad = out
-		grad[range(m),res] -= 1
+		grad[range(m),res]-=1
 		grad = grad/m
 		return grad
 

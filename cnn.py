@@ -60,11 +60,13 @@ class conv_net:
 		ad=ad*gamma+beta				# recover
 		return ad
 
-	def conv2d(self,inp,kernels,biases,stride=[1,1],padding=1):			#padding=(ksz-1)/2 for stride 1
+	def conv2d(self,inp,kernels,biases,stride=[1,1],padding=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
 		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
 		output=[]
 		ksz=kernels.shape[1]
+		if not padding:
+			padding=(ksz-1)//2
 		out_row,out_col=((inp.shape[2]-ksz+2*padding)//stride[0]+1),((inp.shape[3]-ksz+2*padding)//stride[1]+1)
 		for img in inp:		#img[d,row,col]
 			padded=np.zeros((img.shape[0],img.shape[1]+2*padding,img.shape[2]+2*padding))
@@ -79,18 +81,20 @@ class conv_net:
 			output.append(out)
 		return np.array(output)	#output[batches,out_row,out_col,num_ker]
 
-	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],padding=1,layer=1):								#strides[batch,row,col,depth]
+	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],layer=1):								#strides[batch,row,col,depth]
 		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
 		batches,esz,esz,num_ker=errors.shape
 		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
 		flipped=np.flip(kernels,(1,2)).transpose(3,1,2,0)	#flipped[num_ker,ksz,ksz,d]
 		ksz=flipped.shape[1]
-		d_kernels=np.zeros(kernels.shape)
-		batches,d,er_r,er_c=inp.shape
-		for img,error in zip(inp,errors):		#img[d,row,col]
+		pad=(ksz-1)//2
+		# d_kernels=np.zeros(kernels.shape)
+		batches,d,row,col=inp.shape
+		# for img,error in zip(inp,errors):		#img[d,row,col]
 			# Backprop for kernels.				#error[esz,esz,num_ker]
-			d_kernels+=self.conv2d(img.reshape(d,er_r,er_c,-1),np.array([error]),0)
+			# d_kernels+=self.conv2d(img.reshape(d,row,col,-1),error.reshape(1,esz,esz,num_ker),0,padding=pad)
 			#d_kernels[d,ksz,ksz,num_ker]
+		d_kernels=self.conv2d(inp.transpose(1,2,3,0),errors,0,padding=pad)
 		d_kernels/=batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_ker]	flipped[num_ker,ksz,ksz,d]
 		if layer:

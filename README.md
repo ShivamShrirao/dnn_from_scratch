@@ -123,10 +123,15 @@ def train(X_inp,y_inp):
 
 ### Digit 6 feature maps
 Layer 0
+
 ![Number](/pics/6_feature_maps1.png?raw=true)
+
 Layer 1
+
 ![Number feature maps](/pics/6_feature_maps2.png?raw=true)
+
 Layer 2
+
 ![Number feature maps](/pics/6_feature_maps3.png?raw=true)
 
 ## TO-DO

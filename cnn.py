@@ -12,17 +12,29 @@ class conv_net:
 	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
 		weights = 0.1*np.random.randn(*shape)
-		bias = 0.2*np.random.randn(1,num_kernels)
+		bias = 0.5*np.random.randn(1,num_kernels)
 		return weights, bias
 
 	def __str__(self):
 		return str(self.__dict__)
 
 	def sigmoid(self,x):
+		x=np.clip(x,-500,500)
 		return 1.0/(1+np.exp(-x))
 
 	def sigmoid_der(self,x,y):
 		return x * (1 - x)
+
+	def elliot_function( signal, derivative=False ):
+		""" A fast approximation of sigmoid """
+		s = 1 # steepness
+		
+		abs_signal = (1 + np.abs(signal * s))
+		if derivative:
+			return 0.5 * s / abs_signal**2
+		else:
+			# Return the activation signal
+			return 0.5*(signal * s) / abs_signal + 0.5
 
 	def relu(self,x):
 		return x*(x>0)
@@ -32,26 +44,25 @@ class conv_net:
 
 	def softmax(self,x):
 		# exps = np.exp(x)
-		exps = np.exp(x-np.max(x))
-		return exps/np.sum(exps)
+		exps = np.exp(x-np.max(x, axis=1, keepdims = True))
+		return exps/np.sum(exps, axis=1, keepdims = True)
+
+	def soft_der(self,x,y):
+		return np.ones(self.softmax(x).shape)
+
+	def del_cross_soft(self,out,res):
+		res = res.argmax(axis=1)
+		m = res.shape[0]
+		grad = out
+		grad[range(m),res]-=1
+		grad = grad/m
+		return grad
 
 	def normalize(self,x):
 		mn=x.min()
 		mx=x.max()
 		x = (x-mn)/(mx-mn)
 		return x
-
-	# def soft_der(self,x,y):
-	# 	# return -x*y
-	# 	return 1
-
-	# def del_cross_soft(self,out,res):
-	# 	res = res.argmax(axis=1)
-	# 	m = res.shape[0]
-	# 	grad = out
-	# 	grad[range(m),res] -= 1
-	# 	grad = grad/m
-	# 	return grad
 
 	def batch_norm(self,aa):
 		gamma=aa.std()
@@ -65,10 +76,10 @@ class conv_net:
 		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
 		output=[]
 		ksz=kernels.shape[1]
-		if not padding:
-			padding=(ksz-1)//2
+		if not padding:							#take care of padding in backprop too
+			padding=(ksz-1)//2					#currently don't give even ksz
 		out_row,out_col=((inp.shape[2]-ksz+2*padding)//stride[0]+1),((inp.shape[3]-ksz+2*padding)//stride[1]+1)
-		for img in inp:		#img[d,row,col]
+		for img in inp:		#img[d,row,col]		#TODO: MAKE THIS FOR LOOP INTO SINGLE NUMPY OPERATION
 			padded=np.zeros((img.shape[0],img.shape[1]+2*padding,img.shape[2]+2*padding))
 			padded[:,padding:-padding,padding:-padding]=img
 			# Take all windows into a matrix
@@ -84,17 +95,16 @@ class conv_net:
 	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],layer=1):								#strides[batch,row,col,depth]
 		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
 		batches,esz,esz,num_ker=errors.shape
-		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
+		inp=inp.transpose(3,1,2,0)		#inp[d,row,col,batches]
 		flipped=np.flip(kernels,(1,2)).transpose(3,1,2,0)	#flipped[num_ker,ksz,ksz,d]
 		ksz=flipped.shape[1]
 		pad=(ksz-1)//2
 		# d_kernels=np.zeros(kernels.shape)
-		batches,d,row,col=inp.shape
 		# for img,error in zip(inp,errors):		#img[d,row,col]
 			# Backprop for kernels.				#error[esz,esz,num_ker]
 			# d_kernels+=self.conv2d(img.reshape(d,row,col,-1),error.reshape(1,esz,esz,num_ker),0,padding=pad)
 			#d_kernels[d,ksz,ksz,num_ker]
-		d_kernels=self.conv2d(inp.transpose(1,2,3,0),errors,0,padding=pad)
+		d_kernels=self.conv2d(inp,errors,0,padding=pad)
 		d_kernels/=batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_ker]	flipped[num_ker,ksz,ksz,d]
 		if layer:

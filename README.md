@@ -147,3 +147,5 @@ Activations
 ## References
 
 [CS231n: Convolutional Neural Networks for Visual Recognition.](https://cs231n.github.io/convolutional-networks/)
+
+And a lot of researching on Google.

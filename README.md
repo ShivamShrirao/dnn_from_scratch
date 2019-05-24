@@ -121,8 +121,8 @@ def train(X_inp,y_inp):
 ![Airplane feature maps](/pics/airplane_feature_maps.png?raw=true)
 ![Airplane feature maps](/pics/airplane_feature_maps2.png?raw=true)
 
-![Number](/pics/6_feature_map1.png?raw=true)
-![Number feature maps](/pics/6_feature_map2.png?raw=true)
+![Number](/pics/6_feature_maps1.png?raw=true)
+![Number feature maps](/pics/6_feature_maps2.png?raw=true)
 ![Number feature maps](/pics/6_feature_maps3.png?raw=true)
 
 ## TO-DO

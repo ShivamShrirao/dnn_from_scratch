@@ -130,7 +130,7 @@ Layer 1
 
 ![Number feature maps](/pics/6_feature_maps2.png?raw=true)
 
-Layer 2
+Activations
 
 ![Number feature maps](/pics/6_feature_maps3.png?raw=true)
 
@@ -143,3 +143,7 @@ Layer 2
 * Batch normalization.
 * Add better loss calculator and optimizer.
 * Lots of performance and memory improvement.
+
+## References
+
+[CS231n: Convolutional Neural Networks for Visual Recognition.](https://cs231n.github.io/convolutional-networks/)

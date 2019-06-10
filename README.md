@@ -2,7 +2,7 @@
 
 Convolutional Neural Network module made from scratch. Implemented on cifar and mnist dataset for 
 test.
-Just a small module for I made to learn deep working and backpropogation of CNNs. Deriving and making it gave alot of insight to how it all works.
+Just a small module I made to learn deep working and backpropogation of CNNs. Deriving and making it gave alot of insight to how it all works.
 
 ## Usage
 

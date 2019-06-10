@@ -73,24 +73,26 @@ class conv_net:
 
 	def conv2d(self,inp,kernels,biases,stride=[1,1],padding=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
-		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
+		inp=inp.transpose(0,3,1,2)  #inp[batches,d,row,col]
 		output=[]
 		ksz=kernels.shape[1]
 		if not padding:							#take care of padding in backprop too
-			padding=(ksz-1)//2					#currently don't give even ksz
+			padding=(ksz-1)//2					#currently don't give 'even' ksz
 		out_row,out_col=((inp.shape[2]-ksz+2*padding)//stride[0]+1),((inp.shape[3]-ksz+2*padding)//stride[1]+1)
-		for img in inp:		#img[d,row,col]		#TODO: MAKE THIS FOR LOOP INTO SINGLE NUMPY OPERATION
-			padded=np.zeros((img.shape[0],img.shape[1]+2*padding,img.shape[2]+2*padding))
-			padded[:,padding:-padding,padding:-padding]=img
-			# Take all windows into a matrix
-			d,row,col=padded.shape
-			window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(d)[:,None]*row*col
-			slider=(np.arange(out_row*stride[0])[:,None]*row+np.arange(out_col*stride[1]))
+		batches,d,row,col=inp.shape
+		row+=2*padding
+		col+=2*padding
+		padded=np.zeros((batches,d,row,col))
+		padded[:,:,padding:-padding,padding:-padding]=inp
+		# Take all windows into a matrix
+		window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(d)[:,None]*row*col
+		slider=(np.arange(out_row*stride[0])[:,None]*row+np.arange(out_col*stride[1]))
+		for img in padded:		#img[d,row,col]		#TODO: MAKE THIS FOR LOOP INTO SINGLE NUMPY OPERATION
 			# windows(out_row*out_col, ksz*ksz*d) . kernels(d*ksz*ksz,num_ker)
-			out=(np.dot(np.take(padded, window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]), kernels.reshape(-1,kernels.shape[3])))
+			out=(np.dot(np.take(img, window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]), kernels.reshape(-1,kernels.shape[3])))
 			out=(out+biases).reshape(out_row,out_col,kernels.shape[3])
 			output.append(out)
-		return np.array(output)	#output[batches,out_row,out_col,num_ker]
+		return np.array(output) #output[batches,out_row,out_col,num_ker]
 
 	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],layer=1):								#strides[batch,row,col,depth]
 		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]

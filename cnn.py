@@ -74,7 +74,6 @@ class conv_net:
 	def conv2d(self,inp,kernels,biases,stride=[1,1],padding=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
 		inp=inp.transpose(0,3,1,2)  #inp[batches,d,row,col]
-		output=[]
 		ksz=kernels.shape[1]
 		num_ker=kernels.shape[3]
 		if not padding:							#take care of padding in backprop too
@@ -86,16 +85,19 @@ class conv_net:
 		padded=np.zeros((batches,d,row,col))
 		padded[:,:,padding:-padding,padding:-padding]=inp
 		# Take all windows into a matrix
+		kern = kernels.reshape(-1,num_ker)
 		window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(d)[:,None]*row*col
 		slider=(np.arange(out_row*stride[0])[:,None]*row+np.arange(out_col*stride[1]))
 		ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
-		kern = kernels.reshape(-1,num_ker)
-		for img in padded:		#img[d,row,col]		#TODO: MAKE THIS FOR LOOP INTO SINGLE NUMPY OPERATION
+		output=np.empty((batches,out_row*out_col,num_ker))
+		for i,img in enumerate(padded):		#img[d,row,col]
 			# windows(out_row*out_col, ksz*ksz*d) . kernels(d*ksz*ksz,num_ker)
-			out=(np.dot(np.take(img, ind), kern))
-			out=(out+biases).reshape(out_row,out_col,num_ker)
-			output.append(out)
-		return np.array(output) #output[batches,out_row,out_col,num_ker]
+			output[i]=np.dot(np.take(img, ind), kern)+biases
+		# output=np.array([(np.dot(np.take(i,ind),kern)+biases) for i in padded]).reshape(batches,out_row,out_col,num_ker)
+		# bind= np.arange(batches)[:,None]*d*row*col+ind.ravel()		#for batches
+		# output=(np.dot(np.take(padded, bind).reshape(-1,d*ksz*ksz), kern)+biases)
+					# [batches*out_row*out_col,d*ksz*ksz] . [d*ksz*ksz, num_ker]
+		return output.reshape(batches,out_row,out_col,num_ker)
 
 	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],layer=1):								#strides[batch,row,col,depth]
 		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
@@ -104,11 +106,6 @@ class conv_net:
 		flipped=np.flip(kernels,(1,2)).transpose(3,1,2,0)	#flipped[num_ker,ksz,ksz,d]
 		ksz=flipped.shape[1]
 		pad=(ksz-1)//2
-		# d_kernels=np.zeros(kernels.shape)
-		# for img,error in zip(inp,errors):		#img[d,row,col]
-			# Backprop for kernels.				#error[esz,esz,num_ker]
-			# d_kernels+=self.conv2d(img.reshape(d,row,col,-1),error.reshape(1,esz,esz,num_ker),0,padding=pad)
-			#d_kernels[d,ksz,ksz,num_ker]
 		d_kernels=self.conv2d(inp,errors,0,padding=pad)
 		d_kernels/=batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_ker]	flipped[num_ker,ksz,ksz,d]
@@ -122,24 +119,14 @@ class conv_net:
 
 	def max_pool(self,inp,ksize=[2,2],stride=[2,2]):
 		#inp[batches,row,col,d], kernels[ksz,ksz], stride[row,col]
-		inp=inp.transpose(0,3,1,2)	#inp[batches,d,row,col]
 		ksz=ksize[0]
-		out_row,out_col=((inp.shape[2]-ksz)//stride[0]+1),((inp.shape[3]-ksz)//stride[1]+1)
-		batches,d,row,col=inp.shape
-		output=[]
-		max_index=[]
-		window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(0,row,stride[0])[:,None]
-		window=window.ravel()+np.arange(0,col,stride[1])[:,None]*col
-		slider=np.arange(d)[:,None]*row*col
-		ind=(window.ravel()+slider.ravel()[:,None]).reshape(-1,ksz*ksz)
-		for img in inp:			#img[d,row,col]
-			x_col=np.take(img, ind)
-			m_ind=x_col.argmax(axis=1)
-			out=x_col[range(m_ind.size),m_ind].reshape(-1,out_row,out_col)	#out[d,or,oc]
-			max_ind=np.take(ind,np.arange(x_col.shape[0])*x_col.shape[1]+m_ind)
-			output.append(out)
-			max_index.append(max_ind)
-		return np.array(output).transpose(0,2,3,1), np.array(max_index)
+		batches,row,col,d=inp.shape
+		out_row,out_col=row//ksz,col//ksz
+		ipp=inp.reshape(batches,out_row,ksz,out_col,ksz,d)
+		output=ipp.max(axis=(2,4),keepdims=True)
+		mask=((ipp-output)==0)
+		#[batches,o_row,o_col,d]
+		return output.squeeze(), mask
 
 	def max_pool_back(self,errors,inp,max_index,ksize=[2,2],stride=[2,2]):
 		#errors[batches,esz,esz,d],inp[batches,row,col,d],kernels[ksz,ksz],stride[row,col]

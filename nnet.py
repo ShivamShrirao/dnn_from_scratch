@@ -38,10 +38,11 @@ class neural_net:
 			return 0.5*(signal * s) / abs_signal + 0.5
 
 	def relu(self,x):
-		return x*(x>0)
+		x[x<0]=0
+		return x
 
 	def relu_der(self,x,y):
-		return (y > 0)*1
+		return (y > 0)
 
 	def softmax(self,x):
 		# exps = np.exp(x)

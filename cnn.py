@@ -37,10 +37,11 @@ class conv_net:
 			return 0.5*(signal * s) / abs_signal + 0.5
 
 	def relu(self,x):
-		return x*(x>0)
+		x[x<0]=0
+		return x
 
 	def relu_der(self,x,y):
-		return (y > 0)*1
+		return (y > 0)
 
 	def softmax(self,x):
 		# exps = np.exp(x)
@@ -126,18 +127,11 @@ class conv_net:
 		output=ipp.max(axis=(2,4),keepdims=True)
 		mask=((ipp-output)==0)
 		#[batches,o_row,o_col,d]
-		return output.squeeze(), mask
+		return output.squeeze().reshape(batches,out_row,out_col,d), mask
 
-	def max_pool_back(self,errors,inp,max_index,ksize=[2,2],stride=[2,2]):
+	def max_pool_back(self,errors,inp,mask,ksize=[2,2],stride=[2,2]):
 		#errors[batches,esz,esz,d],inp[batches,row,col,d],kernels[ksz,ksz],stride[row,col]
-		errors=errors.transpose(0,3,1,2)	#errors[batches,d,esz,esz]
-		d_inputs=[]
+		ksz=ksize[0]
 		batches,row,col,d=inp.shape
-		iml=row*col*d
-		for error,max_ind in zip(errors,max_index):		#error[d,esz,esz]
-			d_img=np.zeros(iml)
-			np.add.at(d_img,max_ind,error.ravel())
-			d_img=d_img.reshape(d,row,col)		#d_img[d,row,col]
-			d_inputs.append(d_img)
-
-		return (np.array(d_inputs).transpose(0,2,3,1))
+		out_row,out_col=row//ksz,col//ksz
+		return (mask*errors.reshape(batches,out_row,1,out_col,1,d)).reshape(inp.shape)

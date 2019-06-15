@@ -6,27 +6,25 @@ sd=470#np.random.randint(1000)
 np.random.seed(sd)	#470
 
 class neural_net:
-	def __init__(self, nrons):
-		self.nrons = nrons
-		self.weights=[]
-		self.bias=[]
+	def __init__(self):
 		self.learning_rate=0.01
-		self.cross=False
-		for i in range(len(self.nrons)-1):
-			self.weights.append(np.random.randn(self.nrons[i],self.nrons[i+1])*np.sqrt(2/self.nrons[i]))
-			self.bias.append(2*np.random.rand(1,self.nrons[i+1])-1)
 
 	def __str__(self):
 		return str(self.__dict__)
+
+	def init_weights_bias(self,num_inp,num_out,mean=0,std=0.1):
+		weights = std*np.random.randn(num_inp,num_out) + mean
+		bias = std*np.random.randn(1,num_out) + mean
+		return weights,bias
 
 	def sigmoid(self,x):
 		x=np.clip(x,-500,500)
 		return 1.0/(1+np.exp(-x))
 
-	def sigmoid_der(self,x,y):
-		return x * (1 - x)
+	def sigmoid_der(self,y):
+		return y * (1 - y)
 
-	def elliot_function( signal, derivative=False ):
+	def elliot_function(signal, derivative=False):
 		""" A fast approximation of sigmoid """
 		s = 1 # steepness
 		
@@ -60,23 +58,6 @@ class neural_net:
 		grad = grad/m
 		return grad
 
-	def activations(self,func):
-		self.func=func							# ['relu','sigmoid','softmax']
-		self.activate=[]
-		self.act_der=[]
-		for i in range(len(func)):
-			if func[i]=='relu':
-				self.activate.append(self.relu)
-				self.act_der.append(self.relu_der)
-			elif func[i]=='softmax':
-				self.activate.append(self.softmax)
-				self.act_der.append(self.soft_der)
-			elif func[i]=='sigmoid':
-				self.activate.append(self.sigmoid)
-				self.act_der.append(self.sigmoid_der)
-		if func[-1]=='softmax':
-			self.cross=True
-
 	def batch_norm(self,aa):
 		gamma=aa.std()
 		beta=aa.mean()
@@ -84,28 +65,20 @@ class neural_net:
 		ad=ad*gamma+beta				# recover
 		return ad
 
-	def feed_forward(self, X):					# np array
-		self.X = X.reshape(1,self.nrons[0])
-		self.z = []
-		self.a = [self.X]						# a0(1,784)
-		for i in range(len(self.nrons)-1):
-			self.z.append(np.dot(self.a[i] ,self.weights[i])+self.bias[i])	# w0(784,20) w1(20,20) w2(20,10)
-			self.a.append(self.activate[i](self.z[-1]))		# a1(1,20) a2(1,20) b
-			# self.a[-1]=self.batch_norm(self.a[-1])
-		# print(self.z[2])
-		# print(self.a[3])
-		return self.a[-1][0]					# a3(1,10)
+	def mean_squared_error(self, pred, labels):
+		return (labels-pred)**2
 
-	def backprop(self, y):
-		self.y = y.reshape(1,self.nrons[-1]) 				# (1,10)
-		if self.cross:
-			d_c_a = self.del_cross_soft(self.a[-1],self.y)
+	def mean_squared_error_der(self, pred, labels):
+		return 2*(labels-pred)
+
+	def feed_forward(self, X, weights, biases):
+		return np.dot(X,weights)+biases
+
+	def backprop(self,errors,inp,weights,biases,layer=1):
+		d_c_b=errors
+		d_c_w=np.dot(inp.T,d_c_b)/inp.shape[0]
+		if layer:
+			d_c_a=np.dot(d_c_b,weights.T)
 		else:
-			d_c_a = 2*(self.y-self.a[-1])
-		for i in range((len(self.nrons)-2), -1, -1):
-			d_c_b = d_c_a*(self.act_der[i](self.a[i+1],self.z[i]))
-			d_c_w = np.dot(self.a[i].T, d_c_b)
-			d_c_a = np.dot(d_c_b, self.weights[i].T)
-			self.weights[i]+=(d_c_w*self.learning_rate)
-			self.bias[i]+=(d_c_b*self.learning_rate)
-		return d_c_a
+			d_c_a=0
+		return d_c_a, d_c_w*self.learning_rate, d_c_b.mean(axis=0,keepdims=True)*self.learning_rate

@@ -73,66 +73,85 @@ class conv_net:
 		ad=ad*gamma+beta				# recover
 		return ad
 
-	def conv2d(self,inp,kernels,biases,stride=[1,1],padding=0):		#padding=(ksz-1)/2 for same shape in stride 1
+class conv2d:
+	def __init__(self,inp,kernels,biases,stride=[1,1],padding=0,backp=True):		#padding=(ksz-1)/2 for same shape in stride 1
 		#inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
 		inp=inp.transpose(0,3,1,2)  #inp[batches,d,row,col]
 		ksz=kernels.shape[1]
-		num_ker=kernels.shape[3]
-		if not padding:							#take care of padding in backprop too
-			padding=(ksz-1)//2					#currently don't give 'even' ksz
-		out_row,out_col=((inp.shape[2]-ksz+2*padding)//stride[0]+1),((inp.shape[3]-ksz+2*padding)//stride[1]+1)
-		batches,d,row,col=inp.shape
-		row+=2*padding
-		col+=2*padding
-		padded=np.zeros((batches,d,row,col))
-		padded[:,:,padding:-padding,padding:-padding]=inp
+		self.num_ker=kernels.shape[3]
+		self.padding=padding
+		if not self.padding:							#take care of padding in backprop too
+			self.padding=(ksz-1)//2					#currently don't give 'even' ksz
+		self.out_row,self.out_col=((inp.shape[2]-ksz+2*self.padding)//stride[0]+1),((inp.shape[3]-ksz+2*self.padding)//stride[1]+1)
+		self.batches,self.d,self.row,self.col=inp.shape
+		self.row+=2*self.padding
+		self.col+=2*self.padding
+		self.padded=np.zeros((self.batches,self.d,self.row,self.col))
 		# Take all windows into a matrix
-		kern = kernels.reshape(-1,num_ker)
-		window=(np.arange(ksz)[:,None]*row+np.arange(ksz)).ravel()+np.arange(d)[:,None]*row*col
-		slider=(np.arange(out_row*stride[0])[:,None]*row+np.arange(out_col*stride[1]))
-		ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
-		output=np.empty((batches,out_row*out_col,num_ker))
-		for i,img in enumerate(padded):		#img[d,row,col]
-			# windows(out_row*out_col, ksz*ksz*d) . kernels(d*ksz*ksz,num_ker)
-			output[i]=np.dot(np.take(img, ind), kern)+biases
-		# output=np.array([(np.dot(np.take(i,ind),kern)+biases) for i in padded]).reshape(batches,out_row,out_col,num_ker)
-		# bind= np.arange(batches)[:,None]*d*row*col+ind.ravel()		#for batches
-		# output=(np.dot(np.take(padded, bind).reshape(-1,d*ksz*ksz), kern)+biases)
-					# [batches*out_row*out_col,d*ksz*ksz] . [d*ksz*ksz, num_ker]
-		return output.reshape(batches,out_row,out_col,num_ker)
-
-	def conv2d_back(self,errors,inp,kernels,biases,stride=[1,1],layer=1):								#strides[batch,row,col,depth]
-		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
-		batches,esz,esz,num_ker=errors.shape
-		inp=inp.transpose(3,1,2,0)		#inp[d,row,col,batches]
-		flipped=np.flip(kernels,(1,2)).transpose(3,1,2,0)	#flipped[num_ker,ksz,ksz,d]
-		ksz=flipped.shape[1]
+		self.init_kern(kernels)
+		self.biases = biases
+		window=(np.arange(ksz)[:,None]*self.row+np.arange(ksz)).ravel()+np.arange(self.d)[:,None]*self.row*self.col
+		slider=(np.arange(self.out_row*stride[0])[:,None]*self.row+np.arange(self.out_col*stride[1]))
+		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
+		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_ker))
+		# bind= np.arange(self.batches)[:,None]*self.d*self.row*self.col+self.ind.ravel()		#for self.batches
+		if backp:
+			self.init_back()
+	def init_kern(self,kernels):
+		self.kern = kernels.reshape(-1,self.num_ker)
+	def init_back(self):
+		self.flipped=np.flip(kernels,(1,2)).transpose(3,1,2,0)	#self.flipped[num_ker,ksz,ksz,d]
+		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_ker)
+		ksz=self.flipped.shape[1]
 		pad=(ksz-1)//2
-		d_kernels=self.conv2d(inp,errors,0,padding=pad)
-		d_kernels/=batches		#take mean change over batches
-		# Backprop for inp.		errors[batches,esz,esz,num_ker]	flipped[num_ker,ksz,ksz,d]
+		self.d_ker=conv2d(inp,errors,0,padding=pad,backp=False)
+		self.d_inp=conv2d(errors,self.flipped,0,backp=False)
+
+	def forward(self,inp):
+		self.inp=inp.transpose(0,3,1,2)  #inp[batches,self.d,self.row,self.col]
+		batches=self.inp.shape[0]
+		if self.batches!=batches:
+			self.batches=batches
+			self.padded=np.zeros((self.batches,self.d,self.row,self.col))
+			self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_ker))
+		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
+		for i,img in enumerate(self.padded):		#img[self.d,self.row,self.col]
+			# windows(self.out_row*self.out_col, ksz*ksz*self.d) . kernels(self.d*ksz*ksz,self.num_ker)
+			self.output[i]=np.dot(np.take(img, self.ind), self.kern)+self.biases
+		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).reshape(self.batches,self.out_row,self.out_col,self.num_ker)
+		# output=(np.dot(np.take(padded, bind).reshape(-1,self.d*ksz*ksz), self.kern)+self.biases)
+					# [self.batches*self.out_row*self.out_col,self.d*ksz*ksz] . [self.d*ksz*ksz, self.num_ker]
+		return self.output.reshape(self.batches,self.out_row,self.out_col,self.num_ker)
+
+	def backprop(self,errors,layer=1):								#strides[batch,row,col,depth]
+		#errors[batches,esz,esz,num_ker],inp[batches,row,col,d],kernels(d,ksz,ksz,num_ker),biases[1,num_ker],stride[row,col]
+		self.d_ker.init_kern(errors)
+		d_kernels=self.d_ker.forward(self.inp)
+		d_kernels/=self.batches		#take mean change over batches
+		# Backprop for inp.		errors[batches,esz,esz,num_ker]	self.flipped[num_ker,ksz,ksz,d]
 		if layer:
-			d_inputs=self.conv2d(errors,flipped,0)
+			d_inputs=self.d_inp.forward(errors)
 		else:
 			d_inputs=0
-		d_bias=errors.reshape(-1,num_ker).mean(axis=0,keepdims=True)
+		d_bias=self.d_ker.kern.mean(axis=0,keepdims=True)
 
 		return d_inputs, d_kernels*self.learning_rate, d_bias*self.learning_rate
 
-	def max_pool(self,inp,ksize=[2,2],stride=[2,2]):
+class max_pool:
+	def __init__(self,inp,ksize=[2,2],stride=[2,2]):
 		#inp[batches,row,col,d], kernels[ksz,ksz], stride[row,col]
-		ksz=ksize[0]
-		batches,row,col,d=inp.shape
-		out_row,out_col=row//ksz,col//ksz
-		ipp=inp.reshape(batches,out_row,ksz,out_col,ksz,d)
+		self.ksz=ksize[0]
+		self.batches,row,col,self.d=inp.shape
+		self.out_row,self.out_col=row//self.ksz,col//self.ksz
+	def forward(self,inp):
+		self.inp_shape=inp.shape
+		self.batches=self.inp_shape[0]
+		ipp=inp.reshape(self.batches,self.out_row,self.ksz,self.out_col,self.ksz,self.d)
 		output=ipp.max(axis=(2,4),keepdims=True)
-		mask=((ipp-output)==0)
-		#[batches,o_row,o_col,d]
-		return output.squeeze().reshape(batches,out_row,out_col,d), mask
+		self.mask=(ipp==output)
+		#[self.batches,o_row,o_col,self.d]
+		return output.squeeze().reshape(self.batches,self.out_row,self.out_col,self.d)
 
-	def max_pool_back(self,errors,inp,mask,ksize=[2,2],stride=[2,2]):
-		#errors[batches,esz,esz,d],inp[batches,row,col,d],kernels[ksz,ksz],stride[row,col]
-		ksz=ksize[0]
-		batches,row,col,d=inp.shape
-		out_row,out_col=row//ksz,col//ksz
-		return (mask*errors.reshape(batches,out_row,1,out_col,1,d)).reshape(inp.shape)
+	def backprop(self,errors):
+		#errors[self.batches,esz,esz,self.d],inp[self.batches,row,col,self.d],kernels[self.ksz,self.ksz],stride[row,col]
+		return (self.mask*errors.reshape(self.batches,self.out_row,1,self.out_col,1,self.d)).reshape(self.inp_shape)

@@ -12,6 +12,7 @@ class conv_net:
 	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, std=0.1):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
 		weights = std*np.random.randn(*shape)
+		# weights/=np.sqrt(kernel_size*kernel_size*num_inp_channels)
 		bias = std*np.random.randn(1,num_kernels)
 		return weights, bias
 

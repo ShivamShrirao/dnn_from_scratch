@@ -14,6 +14,7 @@ class neural_net:
 
 	def init_weights_bias(self,num_inp,num_out,mean=0,std=0.1):
 		weights = std*np.random.randn(num_inp,num_out) + mean
+		# weights/=np.sqrt(num_inp)
 		bias = std*np.random.randn(1,num_out) + mean
 		return weights,bias
 
@@ -50,13 +51,14 @@ class neural_net:
 	def soft_der(self,x,y):
 		return np.ones(self.softmax(x).shape)
 
-	def del_cross_soft(self,out,res):
-		res = res.argmax(axis=1)
-		m = res.shape[0]
-		grad = out
-		grad[range(m),res]-=1
-		grad = grad/m
-		return grad
+	def cross_entropy_with_logits(self,logits,labels):
+		return -np.mean(labels*np.log(logits),axis=0,keepdims=True)
+
+	def del_cross_sigmoid(self,pred,labels):
+		return (labels-pred)
+
+	def del_cross_soft(self,pred,labels):
+		return (labels-pred)
 
 	def batch_norm(self,aa):
 		gamma=aa.std()

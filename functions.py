@@ -42,17 +42,17 @@ def softmax(z,a=None,derivative=False,cross=False):
 def cross_entropy_with_logits(logits,labels):
 	return -np.mean(labels*np.log(logits),axis=0,keepdims=True)
 
-def del_cross_sigmoid(pred,labels):
-	return (labels-pred)
+def del_cross_sigmoid(logits,labels):
+	return (logits-labels)
 
-def del_cross_soft(pred,labels):
-	return (labels-pred)
+def del_cross_soft(logits,labels):
+	return (logits-labels)
 
-def mean_squared_error(pred, labels):
-	return (labels-pred)**2
+def mean_squared_error(logits, labels):
+	return (logits-labels)**2
 
-def del_mean_squared_error(pred, labels):
-	return 2*(labels-pred)
+def del_mean_squared_error(logits, labels):
+	return 2*(logits-labels)
 
 def batch_norm(aa):
 	gamma=aa.std()
@@ -67,8 +67,5 @@ def echo(z,a=None,derivative=False,cross=False):
 def iterative(sequence,learning_rate):
 	for obj in sequence:
 		if obj.param>0:
-			if obj.weights is None:
-				obj.kernels+=obj.d_c_w*learning_rate
-			elif obj.kernels is None:
-				obj.weights+=obj.d_c_w*learning_rate
-			obj.biases+=obj.d_c_b*learning_rate
+			obj.kernels-=obj.d_c_w*learning_rate
+			obj.biases-=obj.d_c_b*learning_rate

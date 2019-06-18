@@ -24,7 +24,6 @@ class conv2d:
 		self.batches=1
 		self.kernels=kernels
 		self.biases=biases
-		self.weights = None
 		if self.kernels is None:
 			self.kernel_size=kernel_size
 			self.num_kernels=num_kernels
@@ -33,6 +32,7 @@ class conv2d:
 			self.kernel_size=kernels.shape[1]
 			self.num_kernels=kernels.shape[3]
 		self.kern = self.kernels.reshape(-1,self.num_kernels)
+		self.weights = self.kernels
 		self.padding=padding
 		if not self.padding:							#take care of padding in backprop too
 			self.padding=(self.kernel_size-1)//2					#currently don't give 'even' self.kernel_size
@@ -165,7 +165,7 @@ class dense:
 		self.weights = std*np.random.randn(input_shape,num_out) + mean
 		# weights/=np.sqrt(input_shape)
 		self.biases = std*np.random.randn(1,num_out) + mean
-		self.kernels = None
+		self.kernels = self.weights
 		self.shape=(None,num_out)
 		self.param=input_shape*num_out + num_out
 		self.cross=False

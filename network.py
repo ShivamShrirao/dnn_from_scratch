@@ -26,9 +26,11 @@ class Sequential:
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
+		self.optimizer(self.sequence,self.learning_rate)
 
-	def compile(self,optimizer=None,loss=None):
+	def compile(self,optimizer=iterative,loss=None,learning_rate=0.01):
 		self.optimizer=optimizer
+		self.learning_rate=learning_rate
 		self.loss=loss
 		if self.loss==cross_entropy_with_logits:
 			self.sequence[-1].cross=True
@@ -45,9 +47,9 @@ class Sequential:
 		print('='*reps)
 		print('{} ({})'.format(ipl.name,ipl.type).ljust(30),'{}'.format(ipl.shape).ljust(25),' {}'.format(ipl.activation.__name__).ljust(17),ipl.param)
 		self.total_param=0
-		for i in self.sequence:
+		for obj in self.sequence:
 			print('_'*reps)
-			print('{} ({})'.format(i.name,i.type).ljust(30),'{}'.format(i.shape).ljust(25),' {}'.format(i.activation.__name__).ljust(17),i.param)
-			self.total_param+=i.param
+			print('{} ({})'.format(obj.name,obj.type).ljust(30),'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
+			self.total_param+=obj.param
 		print('='*reps)
 		print("Total Params:",self.total_param)

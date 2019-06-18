@@ -6,6 +6,7 @@ class Sequential:
 	def __init__(self):
 		layers.seq_instance=self
 		self.sequence=[]
+		self.learning_rate=0.01
 
 	def add(self,obj):
 		self.sequence.append(obj)
@@ -21,12 +22,13 @@ class Sequential:
 	def fit(self,X_inp,labels):
 		for obj in self.sequence:
 			X_inp=obj.forward(X_inp)
-		err=self.del_loss(X_inp,labels)
+		err=self.delta_loss(X_inp,labels)
 		i=self.seq_len_m1
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
 		self.optimizer(self.sequence,self.learning_rate)
+		return X_inp
 
 	def compile(self,optimizer=iterative,loss=None,learning_rate=0.01):
 		self.optimizer=optimizer
@@ -34,9 +36,9 @@ class Sequential:
 		self.loss=loss
 		if self.loss==cross_entropy_with_logits:
 			self.sequence[-1].cross=True
-			self.del_loss=del_cross_soft
+			self.delta_loss=del_cross_soft
 		elif self.loss==mean_squared_error:
-			self.del_loss=del_mean_squared_error
+			self.delta_loss=del_mean_squared_error
 		self.seq_len_m1=len(self.sequence)-1
 
 	def summary(self):

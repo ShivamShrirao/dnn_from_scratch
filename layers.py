@@ -24,6 +24,10 @@ class conv2d:
 		self.batches=1
 		self.kernels=kernels
 		self.biases=biases
+		self.w_m=0
+		self.w_v=0
+		self.b_m=0
+		self.b_v=0
 		if self.kernels is None:
 			self.kernel_size=kernel_size
 			self.num_kernels=num_kernels
@@ -166,6 +170,10 @@ class dense:
 		# weights/=np.sqrt(input_shape)
 		self.biases = std*np.random.randn(1,num_out) + mean
 		self.kernels = self.weights
+		self.w_m=0
+		self.w_v=0
+		self.b_m=0
+		self.b_v=0
 		self.shape=(None,num_out)
 		self.param=input_shape*num_out + num_out
 		self.cross=False

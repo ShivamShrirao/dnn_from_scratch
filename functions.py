@@ -49,10 +49,10 @@ def del_cross_soft(logits,labels):
 	return (logits-labels)
 
 def mean_squared_error(logits, labels):
-	return (logits-labels)**2
+	return ((logits-labels)**2)/2
 
 def del_mean_squared_error(logits, labels):
-	return 2*(logits-labels)
+	return (logits-labels)
 
 def batch_norm(aa):
 	gamma=aa.std()
@@ -64,8 +64,34 @@ def batch_norm(aa):
 def echo(z,a=None,derivative=False,cross=False):
 	return z
 
-def iterative(sequence,learning_rate):
+def iterative(sequence,learning_rate=0.01):
 	for obj in sequence:
 		if obj.param>0:
 			obj.kernels-=obj.d_c_w*learning_rate
+			obj.biases-=obj.d_c_b*learning_rate
+
+def momentum(sequence,learning_rate=0.01,beta=0.9):
+	for obj in sequence:
+		if obj.param>0:
+			obj.w_m=beta*obj.w_m - learning_rate*obj.d_c_w
+			obj.kernels+=obj.w_m
+			obj.b_m=beta*obj.b_m - learning_rate*obj.d_c_b
+			obj.biases+=obj.b_m
+
+def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):
+	for obj in sequence:
+		if obj.param>0:
+			# Update weights
+			obj.w_m=beta1*obj.w_m + (1-beta1)*obj.d_c_w
+			obj.w_v=beta1*obj.w_v + (1-beta2)*(obj.d_c_w**2)
+			mcap=obj.w_m/(1-beta1)
+			vcap=obj.w_v/(1-beta2)
+			obj.d_c_w=mcap/(np.sqrt(vcap)+epsilon)
+			obj.kernels-=obj.d_c_w*learning_rate
+			# Update biases
+			obj.b_m=beta1*obj.b_m + (1-beta1)*obj.d_c_b
+			obj.b_v=beta1*obj.b_v + (1-beta2)*(obj.d_c_b**2)
+			mcap=obj.b_m/(1-beta1)
+			vcap=obj.b_v/(1-beta2)
+			obj.d_c_b=mcap/(np.sqrt(vcap)+epsilon)
 			obj.biases-=obj.d_c_b*learning_rate

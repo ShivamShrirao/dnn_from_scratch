@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import numpy as np
 
+## THIS FILE IS OLD VERSION - REMOVED FROM MASTER
+
 sd=np.random.randint(1000)
 # print(sd)
 np.random.seed(sd)	#470

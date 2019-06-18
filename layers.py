@@ -5,7 +5,6 @@ from functions import *
 sd=np.random.randint(1000)
 # print(sd)
 np.random.seed(sd)	#470
-learning_rate=0.01
 seq_instance=None
 
 class conv2d:
@@ -25,6 +24,7 @@ class conv2d:
 		self.batches=1
 		self.kernels=kernels
 		self.biases=biases
+		self.weights = None
 		if self.kernels is None:
 			self.kernel_size=kernel_size
 			self.num_kernels=num_kernels
@@ -92,14 +92,14 @@ class conv2d:
 		#errors[batches,esz,esz,num_kernels],inp[batches,row,col,channels],kernels(channels,kernel_size,kernel_size,num_kernels),biases[1,num_kernels],stride[row,col]
 		errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=errors
-		self.d_kernels=self.d_ker.forward(self.inp.transpose(1,2,3,0))
-		self.d_kernels/=self.batches		#take mean change over batches
+		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
+		self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]
 		if layer:
 			d_inputs=self.d_inp.forward(errors)
 		else:
 			d_inputs=0
-		self.d_bias=self.d_ker.kern.mean(axis=0,keepdims=True)
+		self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
 
 		return d_inputs
 
@@ -165,6 +165,7 @@ class dense:
 		self.weights = std*np.random.randn(input_shape,num_out) + mean
 		# weights/=np.sqrt(input_shape)
 		self.biases = std*np.random.randn(1,num_out) + mean
+		self.kernels = None
 		self.shape=(None,num_out)
 		self.param=input_shape*num_out + num_out
 		self.cross=False

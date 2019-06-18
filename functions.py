@@ -63,3 +63,12 @@ def batch_norm(aa):
 
 def echo(z,a=None,derivative=False,cross=False):
 	return z
+
+def iterative(sequence,learning_rate):
+	for obj in sequence:
+		if obj.param>0:
+			if obj.weights is None:
+				obj.kernels+=obj.d_c_w*learning_rate
+			elif obj.kernels is None:
+				obj.weights+=obj.d_c_w*learning_rate
+			obj.biases+=obj.d_c_b*learning_rate

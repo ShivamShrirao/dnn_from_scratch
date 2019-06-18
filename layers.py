@@ -202,3 +202,23 @@ class InputLayer:
 		self.shape=(None,*shape)
 		self.param=0
 		self.activation=echo
+
+class dropout:
+	def __init__(self,name=None):
+		self.type=self.__class__.__name__
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		input_shape=seq_instance.get_inp_shape()
+		self.r,self.c,self.channels=input_shape
+		self.fsz=self.r*self.c*self.channels
+		self.shape=(None,self.fsz)
+		self.param=0
+		self.activation=echo
+
+	def forward(self,inp):
+		return inp.reshape(-1,self.fsz)
+
+	def backprop(self,errors,layer=1):
+		return errors.reshape(-1,self.r,self.c,self.channels)

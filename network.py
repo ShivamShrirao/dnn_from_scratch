@@ -41,6 +41,9 @@ class Sequential:
 			self.del_loss=del_mean_squared_error
 		self.seq_len_m1=len(self.sequence)-1
 
+	def save(self,path):
+		pass
+
 	def summary(self):
 		ipl=layers.InputLayer(self.sequence[0].input_shape)
 		reps=90

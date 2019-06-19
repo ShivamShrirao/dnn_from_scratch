@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import layers
 from functions import *
+import pickle
 
 class Sequential:
 	def __init__(self):
@@ -41,8 +42,26 @@ class Sequential:
 			self.del_loss=del_mean_squared_error
 		self.seq_len_m1=len(self.sequence)-1
 
-	def save(self,path):
-		pass
+	def save_weights(self,path):
+		sv_me=[]
+		for obj in self.sequence:
+			if obj.param>0:
+				sv_me.append(obj.weights)
+				sv_me.append(obj.biases)
+		with open(path,'wb') as f:
+			pickle.dump(sv_me,f)
+
+	def load_weights(self,path):
+		with open(path,'rb') as f:
+			sv_me=pickle.load(f)
+		idx=0
+		for obj in self.sequence:
+			if obj.param>0:
+				obj.weights=sv_me[idx]
+				obj.kernels=obj.weights
+				idx+=1
+				obj.biases=sv_me[idx]
+				idx+=1
 
 	def summary(self):
 		ipl=layers.InputLayer(self.sequence[0].input_shape)
@@ -57,4 +76,4 @@ class Sequential:
 			print('{} ({})'.format(obj.name,obj.type).ljust(30),'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
 			self.total_param+=obj.param
 		print('='*reps)
-		print("Total Params:",self.total_param)
+		print("Total Params: {:,}".format(self.total_param))

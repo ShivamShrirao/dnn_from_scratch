@@ -119,22 +119,38 @@ class max_pool:
 			self.name=name
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
-		row,col,self.channels=input_shape
-		self.out_row,self.out_col=row//self.ksz,col//self.ksz
+		self.batches=1
+		self.row,self.col,self.channels=input_shape
+		self.rem_col=self.row%self.ksz
+		if self.rem_col:
+			self.padded=np.zeros((self.batches,self.row,self.col,self.channels))
+		self.out_row,self.out_col=self.row//self.ksz,self.col//self.ksz
+		self.row-=self.rem_col
+		self.col-=self.rem_col
 		self.shape=(None,self.out_row,self.out_col,self.channels)
 		self.activation=echo
 
 	def forward(self,inp):
 		self.input_shape=inp.shape
-		self.batches=self.input_shape[0]
-		ipp=inp.reshape(self.batches,self.out_row,self.ksz,self.out_col,self.ksz,self.channels)
-		output=ipp.max(axis=(2,4),keepdims=True)
-		self.mask=(ipp==output)
+		batches=self.input_shape[0]
+		if self.rem_col:
+			inp=inp[:,:-self.rem_col,:-self.rem_col,:]
+			if self.batches!=batches:
+				self.padded=np.zeros(self.input_shape)
+		self.batches=batches
+		inp=inp.reshape(self.batches,self.out_row,self.ksz,self.out_col,self.ksz,self.channels)
+		output=inp.max(axis=(2,4),keepdims=True)
+		self.mask=(inp==output)
 		return output.reshape(self.batches,self.out_row,self.out_col,self.channels)
 
 	def backprop(self,errors,layer=1):
 		#errors[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		return (self.mask*errors.reshape(self.batches,self.out_row,1,self.out_col,1,self.channels)).reshape(self.input_shape)
+		z_out=(self.mask*errors.reshape(self.batches,self.out_row,1,self.out_col,1,self.channels))
+		if self.rem_col:
+			self.padded[:,:-self.rem_col,:-self.rem_col,:]=z_out.reshape(self.batches,self.row,self.col,self.channels)
+			return self.padded.reshape(self.input_shape)
+		else:
+			return z_out.reshape(self.input_shape)
 
 class flatten:
 	def __init__(self,name=None):

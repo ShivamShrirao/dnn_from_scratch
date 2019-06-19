@@ -17,14 +17,14 @@ class Sequential:
 
 	def predict(self,X_inp):
 		for obj in self.sequence:
-			X_inp=obj.forward(X_inp)
+			X_inp=obj.forward(X_inp,training=False)
 		return X_inp
 
 	def fit(self,X_inp,labels):
 		for obj in self.sequence:
 			X_inp=obj.forward(X_inp)
 		err=self.del_loss(X_inp,labels)
-		i=self.seq_len_m1
+		i=self.lenseq_m1
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
@@ -40,7 +40,7 @@ class Sequential:
 			self.del_loss=del_cross_soft
 		elif self.loss==mean_squared_error:
 			self.del_loss=del_mean_squared_error
-		self.seq_len_m1=len(self.sequence)-1
+		self.lenseq_m1=len(self.sequence)-1
 
 	def save_weights(self,path):
 		sv_me=[]

@@ -67,7 +67,7 @@ class conv2d:
 		bias = std*np.random.randn(1,num_kernels) + mean
 		return weights, bias
 
-	def forward(self,inp):
+	def forward(self,inp,training=True):
 		self.inp=inp.transpose(0,3,1,2)  #inp[batches,channels,row,col]
 		batches,channels=self.inp.shape[:2]
 		if self.channels!=channels:
@@ -130,7 +130,7 @@ class max_pool:
 		self.shape=(None,self.out_row,self.out_col,self.channels)
 		self.activation=echo
 
-	def forward(self,inp):
+	def forward(self,inp,training=True):
 		self.input_shape=inp.shape
 		batches=self.input_shape[0]
 		if self.rem_col:
@@ -166,7 +166,7 @@ class flatten:
 		self.param=0
 		self.activation=echo
 
-	def forward(self,inp):
+	def forward(self,inp,training=True):
 		return inp.reshape(-1,self.fsz)
 
 	def backprop(self,errors,layer=1):
@@ -194,7 +194,7 @@ class dense:
 		self.param=input_shape*num_out + num_out
 		self.cross=False
 
-	def forward(self,inp):
+	def forward(self,inp,training=True):
 		self.inp=inp
 		self.z_out=np.dot(inp,self.weights)+self.biases
 		self.a_out=self.activation(self.z_out)
@@ -211,6 +211,32 @@ class dense:
 		self.d_c_b=d_c_b.mean(axis=0,keepdims=True)
 		return d_c_a
 
+class dropout:
+	def __init__(self,rate=0.2,name=None):
+		self.type=self.__class__.__name__
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		input_shape=seq_instance.get_inp_shape()
+		self.shape=(None,*input_shape)
+		self.batches=1
+		self.rate=rate
+		self.scale=1/(1-rate)
+		# self.mask=np.random.random((self.batches,*self.input_shape))>self.rate
+		self.param=0
+		self.activation=echo
+
+	def forward(self,inp,training=True):
+		if training:
+			self.mask=scale*np.random.random(inp.shape)>self.rate
+			return inp*mask
+		else:
+			return inp
+
+	def backprop(self,errors,layer=1):
+		return errors*mask
+
 class InputLayer:
 	def __init__(self,shape):
 		self.name='input_layer'
@@ -218,23 +244,3 @@ class InputLayer:
 		self.shape=(None,*shape)
 		self.param=0
 		self.activation=echo
-
-class dropout:
-	def __init__(self,name=None):
-		self.type=self.__class__.__name__
-		if name is None:
-			self.name=self.__class__.__name__
-		else:
-			self.name=name
-		input_shape=seq_instance.get_inp_shape()
-		self.r,self.c,self.channels=input_shape
-		self.fsz=self.r*self.c*self.channels
-		self.shape=(None,self.fsz)
-		self.param=0
-		self.activation=echo
-
-	def forward(self,inp):
-		return inp.reshape(-1,self.fsz)
-
-	def backprop(self,errors,layer=1):
-		return errors.reshape(-1,self.r,self.c,self.channels)

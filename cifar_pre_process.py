@@ -1,8 +1,6 @@
 import numpy as np
 import pickle
-import gc
-
-CIFAR_DIR = '../cifar-10-batches-py/'
+from gc import collect
 
 def unpickle(file):
 	with open(file, 'rb') as fo:
@@ -24,13 +22,14 @@ def normalize(x):
 #Class to handel the dataset
 class CifarPreProcess():
 	
-	def __init__(self):
+	def __init__(self,CIFAR_DIR = '../cifar-10-batches-py/'):
+		self.CIFAR_DIR=CIFAR_DIR
 		files = ['batches.meta','data_batch_1','data_batch_2','data_batch_3','data_batch_4','data_batch_5','test_batch']
 
 		self.all_data = []
 
 		for i,fname in enumerate(files):
-			self.all_data.append(unpickle(CIFAR_DIR+fname))
+			self.all_data.append(unpickle(self.CIFAR_DIR+fname))
 
 		self.names = self.all_data[0][b'label_names']
 		for i,nm in enumerate(self.names):
@@ -63,8 +62,19 @@ class CifarPreProcess():
 		self.test_images = normalize(self.test_images.reshape(test_len,3,32,32).transpose(0,2,3,1))
 		# One hot Encodes the test labels (e.g. [0,0,0,1,0,0,0,0,0,0])
 		self.test_labels = one_hot_encode(np.hstack([d[b"labels"] for d in [self.all_data[-1]]]), 10)
+		self.shuffle_datasets()
 		self.all_data=None
-		gc.collect()
+		collect()
+
+	def shuffle_datasets(self):
+		idxs = np.arange(len(self.training_images))
+		np.random.shuffle(idxs)
+		self.training_images = self.training_images[idxs]
+		self.training_labels = self.training_labels[idxs]
+		idxs = np.arange(len(self.test_images))
+		np.random.shuffle(idxs)
+		self.test_images = self.test_images[idxs]
+		self.test_labels = self.test_labels[idxs]
 		
 	def batch_gen(self,size,ck=0):
 		if not ck:

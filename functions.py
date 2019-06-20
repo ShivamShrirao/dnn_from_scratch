@@ -40,7 +40,7 @@ def softmax(z,a=None,derivative=False,cross=False):
 		return exps/np.sum(exps, axis=1, keepdims = True)
 
 def cross_entropy_with_logits(logits,labels):
-	return -np.mean(labels*np.log(logits),axis=0,keepdims=True)
+	return -np.mean(labels*np.log(logits+1e-30),axis=0,keepdims=True)
 
 def del_cross_sigmoid(logits,labels):
 	return (logits-labels)
@@ -53,13 +53,6 @@ def mean_squared_error(logits, labels):
 
 def del_mean_squared_error(logits, labels):
 	return (logits-labels)
-
-def batch_norm(aa):
-	gamma=aa.std()
-	beta=aa.mean()
-	ad=(aa-beta)/gamma				# normalize
-	ad=ad*gamma+beta				# recover
-	return ad
 
 def echo(z,a=None,derivative=False,cross=False):
 	return z

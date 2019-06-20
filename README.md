@@ -136,10 +136,7 @@ Activations
 
 ## TO-DO
 
-* Automate Backprop sequencing.
-* Add batches to fully connected layer.(ANN)
-* Extend current im2col to batches to eliminate for loop and shift all calculations to numpy.
-* Add more helper functions.
+* Start a server process for visualizing graohs while training.
 * Batch normalization.
 * Add better loss calculator and optimizer.
 * Lots of performance and memory improvement.

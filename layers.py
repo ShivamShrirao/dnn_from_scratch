@@ -229,13 +229,13 @@ class dropout:
 
 	def forward(self,inp,training=True):
 		if training:
-			self.mask=scale*np.random.random(inp.shape)>self.rate
-			return inp*mask
+			self.mask=self.scale*np.random.random(inp.shape)>self.rate
+			return inp*self.mask
 		else:
 			return inp
 
 	def backprop(self,errors,layer=1):
-		return errors*mask
+		return errors*self.mask
 
 class InputLayer:
 	def __init__(self,shape):

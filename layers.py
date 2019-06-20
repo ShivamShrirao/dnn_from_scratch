@@ -244,3 +244,25 @@ class InputLayer:
 		self.shape=(None,*shape)
 		self.param=0
 		self.activation=echo
+
+class batchnormalization:
+	def __init__(self,name=None):
+		self.type=self.__class__.__name__
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		input_shape=seq_instance.get_inp_shape()
+		self.shape=(None,*input_shape)
+		self.batches=1
+		self.param=0
+		self.activation=echo
+
+	def forward(self,inp,training=True):
+		mean=inp.mean(axis=0,keepdims=True)
+		std=inp.std(axis=0,keepdims=True)+1e-8
+		xcap=(inp-mean)/std
+
+
+	def backprop(self,errors,layer=1):
+		return errors*self.mask

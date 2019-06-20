@@ -31,6 +31,16 @@ class Sequential:
 		self.optimizer(self.sequence,self.learning_rate)
 		return X_inp
 
+	def free(self,X_inp,labels):			#just to free memory of large batch
+		for obj in self.sequence:
+			X_inp=obj.forward(X_inp)
+		err=self.del_loss(X_inp,labels)
+		i=self.lenseq_m1
+		for obj in self.sequence[::-1]:
+			err=obj.backprop(err,layer=i)
+			i-=1
+		return X_inp
+
 	def compile(self,optimizer=iterative,loss=None,learning_rate=0.001):
 		self.optimizer=optimizer
 		self.learning_rate=learning_rate
@@ -46,8 +56,7 @@ class Sequential:
 		sv_me=[]
 		for obj in self.sequence:
 			if obj.param>0:
-				sv_me.append(obj.weights)
-				sv_me.append(obj.biases)
+				sv_me.append((obj.weights,obj.biases))#,obj.w_m,obj.w_v,obj.b_m,obj.b_v))
 		with open(path,'wb') as f:
 			pickle.dump(sv_me,f)
 
@@ -57,10 +66,11 @@ class Sequential:
 		idx=0
 		for obj in self.sequence:
 			if obj.param>0:
-				obj.weights=sv_me[idx]
+				obj.weights,obj.biases=sv_me[idx]
 				obj.kernels=obj.weights
-				idx+=1
-				obj.biases=sv_me[idx]
+				# obj.weights,obj.biases,obj.w_m,obj.w_v,obj.b_m,obj.b_v=sv_me[idx]
+				if obj.__class__==layers.conv2d:
+					obj.init_back()
 				idx+=1
 
 	def summary(self):

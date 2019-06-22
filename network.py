@@ -29,7 +29,7 @@ class Sequential:
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
-		self.optimizer(self.sequence,self.learning_rate)
+		self.optimizer(self.sequence,self.learning_rate,self.beta)
 		return X_inp
 
 	def free(self):			#just to free memory of large batch after predict
@@ -42,8 +42,9 @@ class Sequential:
 			err=obj.backprop(err,layer=i)
 			i-=1
 
-	def compile(self,optimizer=iterative,loss=None,learning_rate=0.001):
+	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):
 		self.optimizer=optimizer
+		self.beta=beta
 		self.learning_rate=learning_rate
 		self.loss=loss
 		if self.loss==cross_entropy_with_logits:

@@ -263,6 +263,7 @@ class BatchNormalization:					#Have to add references to each brah
 		self.weights=np.ones(input_shape)			#weights is gamma
 		self.gamma=self.weights
 		self.beta=self.biases
+		self.kernels = self.weights
 		self.w_m=0
 		self.w_v=0
 		self.b_m=0

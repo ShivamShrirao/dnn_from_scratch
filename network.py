@@ -58,7 +58,10 @@ class Sequential:
 		sv_me=[]
 		for obj in self.sequence:
 			if obj.param>0:
-				sv_me.append((obj.weights,obj.biases))#,obj.w_m,obj.w_v,obj.b_m,obj.b_v))
+				if obj.__class__==layers.BatchNormalization:
+					sv_me.append((obj.weights,obj.biases,obj.moving_mean,obj.moving_var))
+				else:
+					sv_me.append((obj.weights,obj.biases))#,obj.w_m,obj.w_v,obj.b_m,obj.b_v))
 		with open(path,'wb') as f:
 			pickle.dump(sv_me,f)
 
@@ -68,11 +71,14 @@ class Sequential:
 		idx=0
 		for obj in self.sequence:
 			if obj.param>0:
-				obj.weights,obj.biases=sv_me[idx]
+				if obj.__class__==layers.BatchNormalization:
+					obj.weights,obj.biases,obj.moving_mean,obj.moving_var=sv_me[idx]
+				else:
+					obj.weights,obj.biases=sv_me[idx]
+					# obj.weights,obj.biases,obj.w_m,obj.w_v,obj.b_m,obj.b_v=sv_me[idx]
+					if obj.__class__==layers.conv2d:
+						obj.init_back()
 				obj.kernels=obj.weights
-				# obj.weights,obj.biases,obj.w_m,obj.w_v,obj.b_m,obj.b_v=sv_me[idx]
-				if obj.__class__==layers.conv2d:
-					obj.init_back()
 				idx+=1
 
 	def summary(self):

@@ -16,6 +16,7 @@ class Sequential:
 		return self.sequence[-1].shape[1:]
 
 	def predict(self,X_inp):
+		self.svd_inp=X_inp[:1]
 		for obj in self.sequence:
 			X_inp=obj.forward(X_inp,training=False)
 		return X_inp
@@ -31,22 +32,22 @@ class Sequential:
 		self.optimizer(self.sequence,self.learning_rate)
 		return X_inp
 
-	def free(self,X_inp,labels):			#just to free memory of large batch
+	def free(self):			#just to free memory of large batch after predict
+		X_inp=self.svd_inp
 		for obj in self.sequence:
-			X_inp=obj.forward(X_inp)
-		err=self.del_loss(X_inp,labels)
+			X_inp=obj.forward(X_inp,training=False)
+		err=X_inp
 		i=self.lenseq_m1
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
-		return X_inp
 
 	def compile(self,optimizer=iterative,loss=None,learning_rate=0.001):
 		self.optimizer=optimizer
 		self.learning_rate=learning_rate
 		self.loss=loss
 		if self.loss==cross_entropy_with_logits:
-			self.sequence[-1].cross=True
+			self.sequence[-1].cross_entrp=True
 			self.del_loss=del_cross_soft
 		elif self.loss==mean_squared_error:
 			self.del_loss=del_mean_squared_error

@@ -54,8 +54,8 @@ class conv2d:
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
 			self.init_back()
-	def init_back(self):
-		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#self.flipped[num_kernels,self.kernel_size,self.kernel_size,channels]
+	def init_back(self):					# flipped kernel has same reference as original one so it will be updated automatically with original kernel
+		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,self.kernel_size,self.kernel_size,channels]
 		pad=(self.kernel_size-1)//2
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,padding=pad,backp=False)
@@ -94,7 +94,8 @@ class conv2d:
 
 	def backprop(self,errors,layer=1):								#strides[batch,row,col,depth]
 		#errors[batches,esz,esz,num_kernels],inp[batches,row,col,channels],kernels(channels,kernel_size,kernel_size,num_kernels),biases[1,num_kernels],stride[row,col]
-		errors*=self.activation(self.z_out,self.a_out,derivative=True)
+		if self.activation != echo:
+			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=errors
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
 		self.d_c_w/=self.batches		#take mean change over batches
@@ -192,7 +193,7 @@ class dense:
 		self.b_v=0
 		self.shape=(None,num_out)
 		self.param=input_shape*num_out + num_out
-		self.cross=False
+		self.cross_entrp=False
 
 	def forward(self,inp,training=True):
 		self.inp=inp
@@ -201,7 +202,8 @@ class dense:
 		return self.a_out
 
 	def backprop(self,errors,layer=1):
-		errors*=self.activation(self.z_out,self.a_out,derivative=True,cross=self.cross)
+		if (self.activation!=echo) and (not self.cross_entrp):
+			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		d_c_b=errors
 		self.d_c_w=np.dot(self.inp.T,d_c_b)/self.inp.shape[0]
 		if layer:
@@ -229,7 +231,7 @@ class dropout:
 
 	def forward(self,inp,training=True):
 		if training:
-			self.mask=self.scale*np.random.random(inp.shape)>self.rate
+			self.mask=self.scale*np.random.random(inp.shape)>self.rate 		#generate mask with rate probability
 			return inp*self.mask
 		else:
 			return inp
@@ -238,15 +240,15 @@ class dropout:
 		return errors*self.mask
 
 class InputLayer:
-	def __init__(self,shape):
+	def __init__(self,shape):		#just placeholder
 		self.name='input_layer'
 		self.type=self.__class__.__name__
 		self.shape=(None,*shape)
 		self.param=0
 		self.activation=echo
 
-class batchnormalization:
-	def __init__(self,name=None):
+class BatchNormalization:
+	def __init__(self,epsilon=1e-10,name=None):
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -255,14 +257,47 @@ class batchnormalization:
 		input_shape=seq_instance.get_inp_shape()
 		self.shape=(None,*input_shape)
 		self.batches=1
+		self.beta=np.zeros(input_shape)
+		self.gamma=np.ones(input_shape)
+		self.epsilon=epsilon
+		self.momentum=0.9
+		self.moving_mean=None
+		self.moving_var=None
 		self.param=0
 		self.activation=echo
+		self.inv_ons=np.ones(self.inp_shape)/self.batches
 
 	def forward(self,inp,training=True):
-		mean=inp.mean(axis=0,keepdims=True)
-		std=inp.std(axis=0,keepdims=True)+1e-8
-		xcap=(inp-mean)/std
-
+		#inp[batches,row,col,channels]
+		if training:
+			self.inp_shape=inp.shape
+			self.mean=inp.mean(axis=0)					#(row,col,channels)
+			self.xmu=inp-self.mean 						#(batches,row,col,channels)
+			self.var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
+			self.ivar=1/(self.var+self.epsilon)			#(row,col,channels)
+			self.istd=np.sqrt(self.ivar)				#(row,col,channels)
+			self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
+			if self.moving_mean is None:
+				self.moving_mean=self.mean
+				self.moving_var=self.var
+			else:
+				self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
+				self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*self.var
+		else:
+			if self.moving_mean is None:
+				self.mean=inp.mean(axis=0)
+				self.var=((gg-mn)**2).mean(axis=0)
+				self.moving_mean=self.mean
+				self.moving_var=self.var
+			self.xnorm=(inp-self.moving_mean)/np.sqrt(self.moving_var+self.epsilon)
+		return self.xnorm*self.gamma+self.beta
 
 	def backprop(self,errors,layer=1):
-		return errors*self.mask
+		#errors(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#damn this one was hard
+		batches=self.input_shape[0]
+		if batches!=self.batches:
+			self.batches=batches
+		self.d_beta=errors.sum(axis=0) 					#(row,col,channels)
+		self.d_gamma=(self.xnorm*errors).sum(axis=0)	#(row,col,channels)
+		d_inp=(1/self.batches)*self.istd*self.gamma*(self.batches*errors-self.d_beta-self.xnorm*(errors*self.xmu).sum(axis=0))
+		return d_inp

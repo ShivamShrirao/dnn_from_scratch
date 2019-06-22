@@ -138,8 +138,10 @@ Activations
 
 * Start a server process for visualizing graohs while training.
 * Batch normalization.
+* L2 norm Regulization.
 * Add better loss calculator and optimizer.
 * Lots of performance and memory improvement.
+* Complex architecture like ResNet ?
 
 ## References
 

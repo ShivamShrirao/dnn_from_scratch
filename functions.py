@@ -5,16 +5,14 @@ sd=np.random.randint(1000)
 # print(sd)
 np.random.seed(sd)	#470
 
-def sigmoid(z,a=None,derivative=False,cross=False):
+def sigmoid(z,a=None,derivative=False):
 	if derivative:
 		return a*(1-a)
-	elif cross:
-		return 1
 	else:
 		z=np.clip(z,-500,500)
 		return 1.0/(1+np.exp(-z))
 
-def elliot_function(z,a=None, derivative=False,cross=False):
+def elliot_function(z,a=None, derivative=False):
 	""" A fast approximation of sigmoid """
 	abs_signal=(1+np.abs(z))
 	if derivative:
@@ -22,18 +20,16 @@ def elliot_function(z,a=None, derivative=False,cross=False):
 	else:
 		return 0.5/abs_signal+0.5
 
-def relu(z,a=None,derivative=False,cross=False):
+def relu(z,a=None,derivative=False):
 	if derivative:
 		return z>0
 	else:
 		z[z<0]=0
 		return z
 
-def softmax(z,a=None,derivative=False,cross=False):
-	if cross:
-		return 1
-	elif derivative:
-		# a*(1-a)
+def softmax(z,a=None,derivative=False):
+	if derivative:
+		# a1*(1-a1)-a1a2
 		return 1
 	else:
 		exps = np.exp(z-np.max(z, axis=1, keepdims = True))
@@ -54,7 +50,7 @@ def mean_squared_error(logits, labels):
 def del_mean_squared_error(logits, labels):
 	return (logits-labels)
 
-def echo(z,a=None,derivative=False,cross=False):
+def echo(z,a=None,derivative=False):
 	return z
 
 def iterative(sequence,learning_rate=0.01):
@@ -88,3 +84,13 @@ def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0
 			vcap=obj.b_v/(1-beta2)
 			obj.d_c_b=mcap/(np.sqrt(vcap)+epsilon)
 			obj.biases-=obj.d_c_b*learning_rate
+
+def elu(z,a=None,derivative=False):
+	if derivative:
+		return z>0
+	else:
+		z[z<0]=0
+		return z
+
+def adadelta(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):
+	pass

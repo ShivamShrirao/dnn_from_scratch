@@ -248,8 +248,8 @@ class InputLayer:
 		self.param=0
 		self.activation=echo
 
-class BatchNormalization:
-	def __init__(self,epsilon=1e-10,name=None):
+class BatchNormalization:					#Have to add references to each brah
+	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -268,7 +268,7 @@ class BatchNormalization:
 		self.b_m=0
 		self.b_v=0
 		self.epsilon=epsilon
-		self.momentum=0.9
+		self.momentum=momentum
 		self.moving_mean=None
 		self.moving_var=None
 		self.param=4*input_shape[-1]
@@ -313,5 +313,5 @@ class BatchNormalization:
 			self.batches=batches
 		self.d_c_b=errors.sum(axis=0) 				#(row,col,channels)		# biases is beta
 		self.d_c_w=(self.xnorm*errors).sum(axis=0)	#(row,col,channels)		# gamma is weights
-		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*errors-self.d_c_b-self.xnorm*(errors*self.xmu).sum(axis=0))
+		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*errors-self.d_c_b-self.xmu*self.ivar*((errors*self.xmu).sum(axis=0)))
 		return d_inp

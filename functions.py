@@ -60,12 +60,12 @@ def iterative(sequence,learning_rate=0.01):
 			obj.weights-=obj.d_c_w*learning_rate
 			obj.biases-=obj.d_c_b*learning_rate
 
-def momentum(sequence,learning_rate=0.01,beta=0.9):
+def momentum(sequence,learning_rate=0.01,beta1=0.9):
 	for obj in sequence:
 		if obj.param>0:
-			obj.w_m=beta*obj.w_m - learning_rate*obj.d_c_w
+			obj.w_m=beta1*obj.w_m - learning_rate*obj.d_c_w
 			obj.weights+=obj.w_m
-			obj.b_m=beta*obj.b_m - learning_rate*obj.d_c_b
+			obj.b_m=beta1*obj.b_m - learning_rate*obj.d_c_b
 			obj.biases+=obj.b_m
 
 def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):

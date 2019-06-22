@@ -225,7 +225,7 @@ class dropout:
 		self.batches=1
 		self.rate=rate
 		self.scale=1/(1-rate)
-		# self.mask=np.random.random((self.batches,*self.input_shape))>self.rate
+		self.mask=np.random.random((self.batches,*input_shape))>self.rate
 		self.param=0
 		self.activation=echo
 
@@ -257,15 +257,21 @@ class BatchNormalization:
 		input_shape=seq_instance.get_inp_shape()
 		self.shape=(None,*input_shape)
 		self.batches=1
-		self.beta=np.zeros(input_shape)
-		self.gamma=np.ones(input_shape)
+		self.inp_shape=(self.batches,*input_shape)
+		self.biases=np.zeros(input_shape)			#biases is beta
+		self.weights=np.ones(input_shape)			#weights is gamma
+		self.gamma=self.weights
+		self.beta=self.biases
+		self.w_m=0
+		self.w_v=0
+		self.b_m=0
+		self.b_v=0
 		self.epsilon=epsilon
 		self.momentum=0.9
 		self.moving_mean=None
 		self.moving_var=None
-		self.param=0
+		self.param=4*input_shape[-1]
 		self.activation=echo
-		self.inv_ons=np.ones(self.inp_shape)/self.batches
 
 	def forward(self,inp,training=True):
 		#inp[batches,row,col,channels]
@@ -281,23 +287,29 @@ class BatchNormalization:
 				self.moving_mean=self.mean
 				self.moving_var=self.var
 			else:
-				self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
+				self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*self.mean
 				self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*self.var
 		else:
 			if self.moving_mean is None:
-				self.mean=inp.mean(axis=0)
-				self.var=((gg-mn)**2).mean(axis=0)
+				self.inp_shape=inp.shape
+				self.mean=inp.mean(axis=0)					#(row,col,channels)
+				self.xmu=inp-self.mean 						#(batches,row,col,channels)
+				self.var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
+				self.ivar=1/(self.var+self.epsilon)			#(row,col,channels)
+				self.istd=np.sqrt(self.ivar)				#(row,col,channels)
 				self.moving_mean=self.mean
 				self.moving_var=self.var
-			self.xnorm=(inp-self.moving_mean)/np.sqrt(self.moving_var+self.epsilon)
-		return self.xnorm*self.gamma+self.beta
+				self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
+			else:
+				self.xnorm=(inp-self.moving_mean)/np.sqrt(self.moving_var+self.epsilon)
+		return self.xnorm*self.weights+self.biases
 
 	def backprop(self,errors,layer=1):
-		#errors(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#damn this one was hard
-		batches=self.input_shape[0]
+		#errors(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#FU
+		batches=self.inp_shape[0]
 		if batches!=self.batches:
 			self.batches=batches
-		self.d_beta=errors.sum(axis=0) 					#(row,col,channels)
-		self.d_gamma=(self.xnorm*errors).sum(axis=0)	#(row,col,channels)
-		d_inp=(1/self.batches)*self.istd*self.gamma*(self.batches*errors-self.d_beta-self.xnorm*(errors*self.xmu).sum(axis=0))
+		self.d_c_b=errors.sum(axis=0) 				#(row,col,channels)		# biases is beta
+		self.d_c_w=(self.xnorm*errors).sum(axis=0)	#(row,col,channels)		# gamma is weights
+		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*errors-self.d_c_b-self.xnorm*(errors*self.xmu).sum(axis=0))
 		return d_inp

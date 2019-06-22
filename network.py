@@ -82,9 +82,14 @@ class Sequential:
 		print('='*reps)
 		print('{} ({})'.format(ipl.name,ipl.type).ljust(30),'{}'.format(ipl.shape).ljust(25),' {}'.format(ipl.activation.__name__).ljust(17),ipl.param)
 		self.total_param=0
+		self.non_train_param=0
 		for obj in self.sequence:
 			print('_'*reps)
-			print('{} ({})'.format(obj.name,obj.type).ljust(30),'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
+			print('{} ({})'.format(obj.name,obj.type).ljust(30)[:30],'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
 			self.total_param+=obj.param
+			if obj.__class__==layers.BatchNormalization:
+				self.non_train_param+=obj.param//2
 		print('='*reps)
 		print("Total Params: {:,}".format(self.total_param))
+		print("Trainable Params: {:,}".format(self.total_param-self.non_train_param))
+		print("Non-trainable Params: {:,}".format(self.non_train_param))

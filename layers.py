@@ -303,6 +303,8 @@ class BatchNormalization:					#Have to add references to each brah
 				self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
 			else:
 				self.inp_shape=inp.shape
+				self.xmu=inp								#(batches,row,col,channels)	## all this is just for proper shape while model.free()
+				self.istd=self.moving_var					#(row,col,channels)
 				self.xnorm=(inp-self.moving_mean)/np.sqrt(self.moving_var+self.epsilon)
 		return self.xnorm*self.weights+self.biases
 

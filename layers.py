@@ -3,7 +3,7 @@ import numpy as np
 from functions import *
 
 sd=np.random.randint(1000)
-# print(sd)
+print("Seed:",sd)
 np.random.seed(sd)	#470
 seq_instance=None
 

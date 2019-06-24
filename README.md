@@ -1,12 +1,12 @@
 # CNN_from_scratch
 
-Convolutional Neural Network module made from scratch. Implemented on cifar and mnist dataset for 
-test.
-Just a small module I made to learn deep working and backpropogation of CNNs. Deriving and making it gave alot of insight to how it all works.
+A keras like Convolutional Neural Network library made from scratch(using numpy).
+Just a small library I made to learn deep working and backpropogation of CNNs and various machine learning algorithms.
+Deriving and making it gave alot of insight to how it all works.
 
 ## Usage
 
-Functions are very much like tensorflow.
+Functions are very much like keras.
 
 ### Import module
 
@@ -136,15 +136,16 @@ Activations
 
 ## TO-DO
 
-* Start a server process for visualizing graohs while training.
-* Batch normalization.
+* Start a server process for visualizing graphs while training.
 * L2 norm Regulization.
-* Add better loss calculator and optimizer.
 * Lots of performance and memory improvement.
 * Complex architecture like ResNet ?
+* GPU support.
 
 ## References
 
 [CS231n: Convolutional Neural Networks for Visual Recognition.](https://cs231n.github.io/convolutional-networks/)
+
+Original Research Papers. Most implementations are based on original research papers with bit improvements if so.
 
 And a lot of researching on Google.

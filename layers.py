@@ -8,7 +8,7 @@ np.random.seed(sd)	#470
 seq_instance=None
 
 class conv2d:
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.1,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
@@ -31,7 +31,7 @@ class conv2d:
 		if self.kernels is None:
 			self.kernel_size=kernel_size
 			self.num_kernels=num_kernels
-			self.kernels,self.biases = self.init_kernel_bias(self.channels,self.kernel_size,self.num_kernels)
+			self.kernels,self.biases = self.init_kernel_bias(self.channels,self.kernel_size,self.num_kernels,std=std)
 		else:
 			self.kernel_size=kernels.shape[1]
 			self.num_kernels=kernels.shape[3]
@@ -240,14 +240,6 @@ class dropout:
 	def backprop(self,errors,layer=1):
 		return errors*self.mask
 
-class InputLayer:
-	def __init__(self,shape):		#just placeholder
-		self.name='input_layer'
-		self.type=self.__class__.__name__
-		self.shape=(None,*shape)
-		self.param=0
-		self.activation=echo
-
 class BatchNormalization:					#Have to add references to each brah
 	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
 		self.type=self.__class__.__name__
@@ -275,7 +267,7 @@ class BatchNormalization:					#Have to add references to each brah
 		self.param=4*input_shape[-1]
 		self.activation=echo
 
-	def forward(self,inp,training=True):
+	def forward(self,inp,training=True):		# yeah, I know too many repetitions
 		#inp[batches,row,col,channels]
 		if training:
 			self.inp_shape=inp.shape
@@ -318,3 +310,35 @@ class BatchNormalization:					#Have to add references to each brah
 		self.d_c_w=(self.xnorm*errors).sum(axis=0)	#(row,col,channels)		# gamma is weights
 		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*errors-self.d_c_b-self.xmu*self.ivar*((errors*self.xmu).sum(axis=0)))
 		return d_inp
+
+class Activation:
+	def __init__(self,activation=echo,input_shape=None,name=None):
+		self.type=self.__class__.__name__
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		if input_shape is None:
+			input_shape=seq_instance.get_inp_shape()[0]
+		self.activation=activation
+		self.shape=(None,*input_shape)
+		self.param=0
+		self.cross_entrp=False
+
+	def forward(self,inp,training=True):
+		self.z_out=inp
+		self.a_out=self.activation(self.z_out)
+		return self.a_out
+
+	def backprop(self,errors,layer=1):
+		if (self.activation!=echo) and (not self.cross_entrp):
+			errors*=self.activation(self.z_out,self.a_out,derivative=True)
+		return errors
+
+class InputLayer:
+	def __init__(self,shape):		#just placeholder
+		self.name='input_layer'
+		self.type=self.__class__.__name__
+		self.shape=(None,*shape)
+		self.param=0
+		self.activation=echo

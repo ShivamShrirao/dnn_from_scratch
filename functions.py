@@ -13,7 +13,7 @@ def sigmoid(z,a=None,derivative=False):
 		z=np.clip(z,-500,500)
 		return 1.0/(1+np.exp(-z))
 
-def elliot_function(z,a=None, derivative=False):
+def elliot(z,a=None, derivative=False):
 	""" A fast approximation of sigmoid """
 	abs_signal=(1+np.abs(z))
 	if derivative:
@@ -27,6 +27,18 @@ def relu(z,a=None,derivative=False):
 	else:
 		z[z<0]=0
 		return z
+
+def elu(z,a=None,derivative=False):			#alpha is 1
+	if derivative:
+		return np.where(z>0, 1, a+1)
+	else:
+		return np.where(z>0, z, np.exp(z)-1)
+
+def tanh(z,a=None,derivative=False):
+	if derivative:
+		return 1-a**2
+	else:
+		return np.tanh(z)
 
 def softmax(z,a=None,derivative=False):
 	if derivative:
@@ -57,18 +69,34 @@ def echo(z,a=None,derivative=False):
 def iterative(sequence,learning_rate=0.01):
 	for obj in sequence:
 		if obj.param>0:
-			obj.weights-=obj.d_c_w*learning_rate
-			obj.biases-=obj.d_c_b*learning_rate
+			obj.weights-=learning_rate*obj.d_c_w
+			obj.biases-=learning_rate*obj.d_c_b
 
-def momentum(sequence,learning_rate=0.01,beta1=0.9):
+def momentum(sequence,learning_rate=0.01,beta1=0.9,weight_decay=0.0005):	# will have to specify it
 	for obj in sequence:
 		if obj.param>0:
-			obj.w_m=beta1*obj.w_m - learning_rate*obj.d_c_w
+			obj.w_m=beta1*obj.w_m - learning_rate*obj.d_c_w - weight_decay*learning_rate*obj.weights
 			obj.weights+=obj.w_m
-			obj.b_m=beta1*obj.b_m - learning_rate*obj.d_c_b
+			obj.b_m=beta1*obj.b_m - learning_rate*obj.d_c_b - weight_decay*learning_rate*obj.biases
 			obj.biases+=obj.b_m
 
-def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):
+def rmsprop(sequence,learning_rate=0.001,beta1=0.9,epsilon=1e-8):
+	for obj in sequence:
+		if obj.param>0:
+			obj.w_v=beta1*obj.w_v + (1-beta1)*(obj.d_c_w**2)
+			obj.weights-=learning_rate*(obj.d_c_w/np.sqrt(obj.w_v+epsilon))
+			obj.b_v=beta1*obj.b_v + (1-beta1)*(obj.d_c_b**2)
+			obj.biases-=learning_rate*(obj.d_c_b/np.sqrt(obj.b_v+epsilon))
+
+def adagrad(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-8):
+	for obj in sequence:
+		if obj.param>0:
+			obj.w_v+=(obj.d_c_w**2)
+			obj.weights-=learning_rate*(obj.d_c_w/np.sqrt(obj.w_v+epsilon))
+			obj.b_v+=(obj.d_c_b**2)
+			obj.biases-=learning_rate*(obj.d_c_b/np.sqrt(obj.b_v+epsilon))
+
+def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):		# decay not functional rn
 	for obj in sequence:
 		if obj.param>0:
 			# Update weights
@@ -77,21 +105,24 @@ def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0
 			mcap=obj.w_m/(1-beta1)
 			vcap=obj.w_v/(1-beta2)
 			obj.d_c_w=mcap/(np.sqrt(vcap)+epsilon)
-			obj.weights-=obj.d_c_w*learning_rate
+			obj.weights-=learning_rate*obj.d_c_w
 			# Update biases
 			obj.b_m=beta1*obj.b_m + (1-beta1)*obj.d_c_b
 			obj.b_v=beta1*obj.b_v + (1-beta2)*(obj.d_c_b**2)
 			mcap=obj.b_m/(1-beta1)
 			vcap=obj.b_v/(1-beta2)
 			obj.d_c_b=mcap/(np.sqrt(vcap)+epsilon)
-			obj.biases-=obj.d_c_b*learning_rate
+			obj.biases-=learning_rate*obj.d_c_b
 
-def elu(z,a=None,derivative=False):
-	if derivative:
-		return z>0
-	else:
-		z[z<0]=0
-		return z
+def adadelta(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-5):
+	for obj in sequence:
+		if obj.param>0:
+			obj.w_v=beta1*obj.w_v + (1-beta1)*(obj.d_c_w**2)
+			obj.d_c_w=np.sqrt((obj.w_m+epsilon)/(obj.w_v+epsilon))*obj.d_c_w
+			obj.w_m=beta1*obj.w_m + (1-beta1)*(obj.d_c_w**2)
+			obj.weights-=obj.d_c_w
 
-def adadelta(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):
-	pass
+			obj.b_v=beta1*obj.b_v + (1-beta1)*(obj.d_c_b**2)
+			obj.d_c_b=np.sqrt((obj.b_m+epsilon)/(obj.b_v+epsilon))*obj.d_c_b
+			obj.b_m=beta1*obj.b_m + (1-beta1)*(obj.d_c_b**2)
+			obj.biases-=obj.d_c_b

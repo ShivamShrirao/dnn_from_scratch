@@ -3,7 +3,7 @@ import numpy as np
 import layers
 
 sd=np.random.randint(1000)
-# print(sd)
+print("Seed:",sd)
 np.random.seed(sd)	#470
 
 def sigmoid(z,a=None,derivative=False):
@@ -101,20 +101,32 @@ def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0
 		if obj.param>0:
 			# Update weights
 			obj.w_m=beta1*obj.w_m + (1-beta1)*obj.d_c_w
-			obj.w_v=beta1*obj.w_v + (1-beta2)*(obj.d_c_w**2)
+			obj.w_v=beta2*obj.w_v + (1-beta2)*(obj.d_c_w**2)
 			mcap=obj.w_m/(1-beta1)
 			vcap=obj.w_v/(1-beta2)
 			obj.d_c_w=mcap/(np.sqrt(vcap)+epsilon)
 			obj.weights-=learning_rate*obj.d_c_w
 			# Update biases
 			obj.b_m=beta1*obj.b_m + (1-beta1)*obj.d_c_b
-			obj.b_v=beta1*obj.b_v + (1-beta2)*(obj.d_c_b**2)
+			obj.b_v=beta2*obj.b_v + (1-beta2)*(obj.d_c_b**2)
 			mcap=obj.b_m/(1-beta1)
 			vcap=obj.b_v/(1-beta2)
 			obj.d_c_b=mcap/(np.sqrt(vcap)+epsilon)
 			obj.biases-=learning_rate*obj.d_c_b
 
-def adadelta(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-5):
+def adamax(sequence,learning_rate=0.002,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):		# decay not functional rn
+	for obj in sequence:
+		if obj.param>0:
+			# Update weights
+			obj.w_m=beta1*obj.w_m + (1-beta1)*obj.d_c_w
+			obj.w_v=np.maximum(beta2*obj.w_v,abs(obj.d_c_w))
+			obj.weights-=(learning_rate/(1-beta1))*(obj.w_m/(obj.w_v+epsilon))
+			# Update biases
+			obj.b_m=beta1*obj.b_m + (1-beta1)*obj.d_c_b
+			obj.b_v=np.maximum(beta2*obj.b_v,abs(obj.d_c_b))
+			obj.biases-=(learning_rate/(1-beta1))*(obj.b_m/(obj.b_v+epsilon))
+
+def adadelta(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-8):
 	for obj in sequence:
 		if obj.param>0:
 			obj.w_v=beta1*obj.w_v + (1-beta1)*(obj.d_c_w**2)

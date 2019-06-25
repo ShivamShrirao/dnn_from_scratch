@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import numpy as np
-from functions import *
+from nnet.functions import *
 
 sd=np.random.randint(1000)
 print("Seed:",sd)
-np.random.seed(sd)	#470
+np.random.seed(sd)
 seq_instance=None
 
 class conv2d:
@@ -54,8 +54,8 @@ class conv2d:
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
 			self.init_back()
-	def init_back(self):					# flipped kernel has same reference as original one so it will be updated automatically with original kernel
-		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,self.kernel_size,self.kernel_size,channels]
+	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
+		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
 		pad=(self.kernel_size-1)//2
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,padding=pad,backp=False)
@@ -267,7 +267,7 @@ class BatchNormalization:					#Have to add references to each brah
 		self.param=4*input_shape[-1]
 		self.activation=echo
 
-	def forward(self,inp,training=True):		# yeah, I know too many repetitions
+	def forward(self,inp,training=True):		# yeah, I know, too many repetitions
 		#inp[batches,row,col,channels]
 		if training:
 			self.inp_shape=inp.shape

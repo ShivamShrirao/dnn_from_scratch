@@ -1,6 +1,6 @@
-# CNN_from_scratch
+# Deep Learning Library from scratch
 
-A keras like Convolutional Neural Network library made from scratch(using just numpy). Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
+A keras like Convolutional Neural Network library made from scratch (just using numpy). Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
 Just made to learn deep working and backpropogation of CNNs and various machine learning algorithms. Deriving and making it gave alot of insight to how it all works. Will keep adding new networks and algorithms in future.
 
 ## Usage
@@ -16,41 +16,6 @@ from nnet import optimizers
 from nnet import functions
 import numpy as np
 ```
-
-### Optimizers avaliable	(nnet.optimizers)
-
-* Iterative			(optimizers.iterative)
-* SGD with Momentum (optimizers.momentum)
-* Rmsprop			(optimizers.rmsprop)
-* Adagrad			(optimizers.adagrad)
-* Adam				(optimizers.adam)
-* Adamax			(optimizers.adamax)
-* Adadelta			(optimizers.adadelta)
-
-### Layers avaliable		(nnet.layers)
-
-* conv2d
-* max_pool
-* flatten
-* dense				(Fully connected layer)
-* dropout
-* BatchNormalization
-* Activation
-* InputLayer		(just placeholder)
-
-### Losses avaliable		(nnet.functions)
-
-* functions.cross_entropy_with_logits
-* functions.mean_squared_error
-
-### Activation Functions avaliable(nnet.functions)
-
-* sigmoid
-* elliot
-* relu
-* elu
-* tanh
-* softmax
 
 ### Make Sequential Model
 
@@ -134,6 +99,41 @@ Non-trainable Params: 1,472
 ```python
 model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits,learning_rate=0.001)
 ```
+
+### Optimizers avaliable	(nnet.optimizers)
+
+* Iterative			(optimizers.iterative)
+* SGD with Momentum (optimizers.momentum)
+* Rmsprop			(optimizers.rmsprop)
+* Adagrad			(optimizers.adagrad)
+* Adam				(optimizers.adam)
+* Adamax			(optimizers.adamax)
+* Adadelta			(optimizers.adadelta)
+
+### Layers avaliable		(nnet.layers)
+
+* conv2d
+* max_pool
+* flatten
+* dense				(Fully connected layer)
+* dropout
+* BatchNormalization
+* Activation
+* InputLayer		(just placeholder)
+
+### Losses avaliable		(nnet.functions)
+
+* functions.cross_entropy_with_logits
+* functions.mean_squared_error
+
+### Activation Functions avaliable (nnet.functions)
+
+* sigmoid
+* elliot
+* relu
+* elu
+* tanh
+* softmax
 
 ### To train
 

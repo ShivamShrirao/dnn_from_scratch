@@ -135,6 +135,10 @@ model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits
 * tanh
 * softmax
 
+### Back Prop
+
+Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
+
 ### To train
 
 ```python
@@ -158,10 +162,6 @@ model.save_weights("file.dump")
 ```python
 model.load_weights("file.dump")
 ```
-
-### Back Prop
-
-Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
 
 ## Training graph
 ### Accuracy

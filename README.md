@@ -22,6 +22,8 @@ import numpy as np
 Add each layer to the Sequential model with parameters.
 
 ```python
+model = Sequential()
+
 model.add(conv2d(num_kernels=32,kernel_size=3,activation=functions.relu,input_shape=(32,32,3)))
 model.add(BatchNormalization())
 model.add(max_pool())

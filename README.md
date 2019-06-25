@@ -121,7 +121,7 @@ model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits
 * Activation
 * InputLayer		(just placeholder)
 
-### Losses avaliable		(nnet.functions)
+### Loss functions avaliable	(nnet.functions)
 
 * functions.cross_entropy_with_logits
 * functions.mean_squared_error
@@ -172,8 +172,8 @@ Backprop is fully automated. Just specify layers, loss function and optimizers. 
 ## Some predictions.
 
 ![automobile](/pics/automobile.png?raw=true)
-![dog](/pics/dog.png?raw=true)
 ![deer](/pics/deer.png?raw=true)
+![dog](/pics/dog.png?raw=true)
 ![horse](/pics/horse.png?raw=true)
 
 ## Visualize Feature Maps

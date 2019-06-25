@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-import layers
-from functions import *
+from nnet import layers
+from nnet.functions import *
+from nnet.optimizers import *
 import pickle
 
 class Sequential:

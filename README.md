@@ -5,7 +5,7 @@ Just made to learn deep working and backpropogation of CNNs and various machine 
 
 ## Usage
 
-Functions are very much like keras.
+Functions are very much like keras. Check Jupyter notebooks for implementation.
 
 ### Import modules
 
@@ -195,7 +195,11 @@ Activations
 
 ## TO-DO
 
+* Weight initializer.
 * Start a server process for visualizing graphs while training.
+* Start a parallel process which is notified to use optimizer and update weights.
+* Split batches to processes.
+* Comments.
 * L2 norm Regulization.
 * Lots of performance and memory improvement.
 * Complex architecture like ResNet ?

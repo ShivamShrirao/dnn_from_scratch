@@ -3,6 +3,7 @@ from nnet import layers
 from nnet.functions import *
 from nnet.optimizers import *
 import pickle
+from gc import collect
 
 class Sequential:
 	def __init__(self):
@@ -42,6 +43,7 @@ class Sequential:
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
+		collect()
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):
 		self.optimizer=optimizer

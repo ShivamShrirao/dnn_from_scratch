@@ -8,7 +8,7 @@ np.random.seed(sd)
 seq_instance=None
 
 class conv2d:
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.1,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.01,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
@@ -60,10 +60,10 @@ class conv2d:
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,padding=pad,backp=False)
 		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,backp=False)
-	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.1):
+	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
 		weights = std*np.random.randn(*shape) + mean
-		# weights/=np.sqrt(kernel_size*kernel_size*num_inp_channels)
+		# weights/=np.sqrt(num_inp_channels)
 		bias = std*np.random.randn(1,num_kernels) + mean
 		return weights, bias
 
@@ -84,10 +84,12 @@ class conv2d:
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 			# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)
-			self.output[i]=np.dot(img.take(self.ind), self.kern)+self.biases
+			self.output[i]=np.dot(img.take(self.ind), self.kern)
 		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		# output=(np.dot(np.take(padded, bind).reshape(-1,self.channels*kernel_size*kernel_size), self.kern)+self.biases)
 					# [self.batches*self.out_row*self.out_col,self.channels*kernel_size*kernel_size] . [self.channels*kernel_size*kernel_size, self.num_kernels]
+		if self.biases is not 0:
+			self.output+=self.biases
 		self.z_out=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.a_out=self.activation(self.z_out)
 		return self.a_out
@@ -174,7 +176,7 @@ class flatten:
 		return errors.reshape(-1,self.r,self.c,self.channels)
 
 class dense:
-	def __init__(self,num_out,input_shape=None,activation=echo,mean=0,std=0.1,name=None):
+	def __init__(self,num_out,input_shape=None,activation=echo,mean=0,std=0.01,name=None):
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__

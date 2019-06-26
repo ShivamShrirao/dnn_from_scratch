@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 from gc import collect
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 def unpickle(file):
 	with open(file, 'rb') as fo:
@@ -42,6 +43,8 @@ class CifarPreProcess():
 		
 		self.test_images = None
 		self.test_labels = None
+
+		self.itr_train = None
 	
 	def set_up_images(self):
 		
@@ -75,7 +78,19 @@ class CifarPreProcess():
 		np.random.shuffle(idxs)
 		self.test_images = self.test_images[idxs]
 		self.test_labels = self.test_labels[idxs]
-		
+
+	def data_augment(self,batch_size=64):
+		self.datagen = ImageDataGenerator(
+			rotation_range=15,
+			width_shift_range=0.1,
+			height_shift_range=0.1,
+			horizontal_flip=True,
+			)
+		self.datagen.fit(self.training_images)
+		self.itr_train = self.datagen.flow(self.training_images, self.training_labels, batch_size=batch_size)
+		collect()
+		return self.itr_train
+
 	def batch_gen(self,size,ck=0):
 		if not ck:
 			ck=self.st

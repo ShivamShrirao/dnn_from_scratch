@@ -195,7 +195,7 @@ Activations
 
 ## TO-DO
 
-* Fix loading and saving weights for trainig.
+* Weight initializer.
 * Start a server process for visualizing graphs while training.
 * Start a parallel process which is notified to use optimizer and update weights.
 * Split batches to processes.

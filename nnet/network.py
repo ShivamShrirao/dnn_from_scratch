@@ -57,8 +57,8 @@ class Sequential:
 			self.del_loss=del_mean_squared_error
 		self.lenseq_m1=len(self.sequence)-1
 
-	def save_weights(self,path):	# has problems if u wanna train the network further. Need to fix that.
-		sv_me=[]					# OK for just validation and prediction.
+	def save_weights(self,path):
+		sv_me=[]
 		for obj in self.sequence:
 			if obj.param>0:
 				if obj.__class__==layers.BatchNormalization:

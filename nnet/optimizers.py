@@ -51,7 +51,7 @@ def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0
 			obj.d_c_b=mcap/(np.sqrt(vcap)+epsilon)
 			obj.biases-=learning_rate*obj.d_c_b
 
-def adamax(sequence,learning_rate=0.002,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):		# decay not functional rn
+def adamax(sequence,learning_rate=0.002,beta1=0.9,beta2=0.999,epsilon=1e-8):
 	for obj in sequence:
 		if obj.param>0:
 			# Update weights

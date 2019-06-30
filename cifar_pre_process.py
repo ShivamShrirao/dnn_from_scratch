@@ -54,6 +54,7 @@ class CifarPreProcess():
 		self.training_images = np.vstack([d[b'data'] for d in self.all_data[1:-1]])
 		self.train_len = self.training_images.shape[0]
 		self.training_images = normalize(self.training_images.reshape(self.train_len,3,32,32).transpose(0,2,3,1))
+		self.training_images = self.training_images.astype(np.float32)
 		# One hot Encodes the training labels (e.g. [0,0,0,1,0,0,0,0,0,0])
 		self.training_labels = one_hot_encode(np.hstack([d[b"labels"] for d in self.all_data[1:-1]]), 10)
 
@@ -63,6 +64,7 @@ class CifarPreProcess():
 		self.test_images = np.vstack([d[b"data"] for d in [self.all_data[-1]]])
 		test_len = self.test_images.shape[0]
 		self.test_images = normalize(self.test_images.reshape(test_len,3,32,32).transpose(0,2,3,1))
+		self.test_images = self.test_images.astype(np.float32)
 		# One hot Encodes the test labels (e.g. [0,0,0,1,0,0,0,0,0,0])
 		self.test_labels = one_hot_encode(np.hstack([d[b"labels"] for d in [self.all_data[-1]]]), 10)
 		self.shuffle_datasets()

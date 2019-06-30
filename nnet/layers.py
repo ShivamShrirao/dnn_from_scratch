@@ -17,6 +17,7 @@ class conv2d:
 		else:
 			self.name=name
 		self.activation=activation
+		self.dtype=np.float32
 		self.stride=stride
 		self.type=self.__class__.__name__
 		self.input_shape=input_shape
@@ -43,13 +44,13 @@ class conv2d:
 		self.out_row,self.out_col=((self.row-self.kernel_size+2*self.padding)//stride[0]+1),((self.col-self.kernel_size+2*self.padding)//stride[1]+1)
 		self.prow=self.row+2*self.padding
 		self.pcol=self.col+2*self.padding
-		self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol))
+		self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 		self.param=(self.kernel_size*self.kernel_size*self.channels+1)*self.num_kernels
 		# Take all windows into a matrix
 		window=(np.arange(self.kernel_size)[:,None]*self.prow+np.arange(self.kernel_size)).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
-		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels))
+		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
@@ -65,21 +66,21 @@ class conv2d:
 		weights = std*np.random.randn(*shape) + mean
 		# weights/=np.sqrt(num_inp_channels)
 		bias = std*np.random.randn(1,num_kernels) + mean
-		return weights, bias
+		return weights.astype(self.dtype), bias.astype(self.dtype)
 
 	def forward(self,inp,training=True):
 		self.inp=inp.transpose(0,3,1,2)  #inp[batches,channels,row,col]
 		batches,channels=self.inp.shape[:2]
 		if self.channels!=channels:
 			self.channels=channels
-			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol))
+			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 			window=(np.arange(self.kernel_size)[:,None]*self.prow+np.arange(self.kernel_size)).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
 		if self.batches!=batches:
 			self.batches=batches
-			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol))
-			self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels))
+			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
+			self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
 		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
@@ -115,6 +116,7 @@ class max_pool:
 		#inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
 		self.ksz=ksize[0]
 		self.param=0
+		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -126,7 +128,7 @@ class max_pool:
 		self.row,self.col,self.channels=input_shape
 		self.rem_col=self.row%self.ksz
 		if self.rem_col:
-			self.padded=np.zeros((self.batches,self.row,self.col,self.channels))
+			self.padded=np.zeros((self.batches,self.row,self.col,self.channels),dtype=self.dtype)
 		self.out_row,self.out_col=self.row//self.ksz,self.col//self.ksz
 		self.row-=self.rem_col
 		self.col-=self.rem_col
@@ -139,7 +141,7 @@ class max_pool:
 		if self.rem_col:
 			inp=inp[:,:-self.rem_col,:-self.rem_col,:]
 			if self.batches!=batches:
-				self.padded=np.zeros(self.input_shape)
+				self.padded=np.zeros(self.input_shape,dtype=self.dtype)
 		self.batches=batches
 		inp=inp.reshape(self.batches,self.out_row,self.ksz,self.out_col,self.ksz,self.channels)
 		output=inp.max(axis=(2,4),keepdims=True)
@@ -158,6 +160,7 @@ class max_pool:
 class flatten:
 	def __init__(self,name=None):
 		self.type=self.__class__.__name__
+		self.dtype=np.float32
 		if name is None:
 			self.name=self.__class__.__name__
 		else:
@@ -177,6 +180,7 @@ class flatten:
 
 class dense:
 	def __init__(self,num_out,input_shape=None,activation=echo,mean=0,std=0.01,name=None):
+		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -185,9 +189,9 @@ class dense:
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()[0]
 		self.activation=activation
-		self.weights = std*np.random.randn(input_shape,num_out) + mean
+		self.weights = std*np.random.randn(input_shape,num_out).astype(self.dtype) + mean
 		# weights/=np.sqrt(input_shape)
-		self.biases = std*np.random.randn(1,num_out) + mean
+		self.biases = std*np.random.randn(1,num_out).astype(self.dtype) + mean
 		self.kernels = self.weights
 		self.w_m=0
 		self.w_v=0
@@ -217,6 +221,7 @@ class dense:
 
 class dropout:
 	def __init__(self,rate=0.2,name=None):
+		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -244,6 +249,7 @@ class dropout:
 
 class BatchNormalization:					#Have to add references to each brah
 	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
+		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -253,8 +259,8 @@ class BatchNormalization:					#Have to add references to each brah
 		self.shape=(None,*input_shape)
 		self.batches=1
 		self.inp_shape=(self.batches,*input_shape)
-		self.biases=np.zeros(input_shape)			#biases is beta
-		self.weights=np.ones(input_shape)			#weights is gamma
+		self.biases=np.zeros(input_shape).astype(self.dtype)		#biases is beta
+		self.weights=np.ones(input_shape).astype(self.dtype)		#weights is gamma
 		self.gamma=self.weights
 		self.beta=self.biases
 		self.kernels = self.weights
@@ -315,6 +321,7 @@ class BatchNormalization:					#Have to add references to each brah
 
 class Activation:
 	def __init__(self,activation=echo,input_shape=None,name=None):
+		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -341,6 +348,7 @@ class InputLayer:
 	def __init__(self,shape):		#just placeholder
 		self.name='input_layer'
 		self.type=self.__class__.__name__
+		self.dtype=np.float32
 		self.shape=(None,*shape)
 		self.param=0
 		self.activation=echo

@@ -1,11 +1,10 @@
-// nvcc sgemm .c -lcublas
 # include <stdio.h>
 # include <stdlib.h>
 # include <cuda_runtime.h>
 # include "cublas_v2.h"
 # define IDX2C(i,j,ld) (((j)*(ld))+(i))
 
-int gemm(float *a,float *b,float *c,int m,int k,int n, float al, float bet){
+int gemm(float *a,float *b,float *c,int m,int k,int n, float al, float bet, float *biases){
 	cudaError_t cudaStat ; // cudaMalloc status
 	cublasStatus_t stat ; // CUBLAS functions status
 	cublasHandle_t handle ; // CUBLAS context
@@ -19,7 +18,7 @@ int gemm(float *a,float *b,float *c,int m,int k,int n, float al, float bet){
 	// memory alloc for b
 	cudaStat = cudaMalloc((void**)&d_c,m*n*sizeof(*c)); // device
 	// memory alloc for c
-	stat = cublasCreate (&handle); // initialize CUBLAS context
+	stat = cublasCreate(&handle); // initialize CUBLAS context
 	// copy matrices from the host to the device
 	stat = cublasSetMatrix(m,k,sizeof(*a),a,m,d_a,m); //a -> d_a
 	stat = cublasSetMatrix(k,n,sizeof(*b),b,k,d_b,k); //b -> d_b

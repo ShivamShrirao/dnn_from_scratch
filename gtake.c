@@ -2,9 +2,10 @@
 # include <stdlib.h>
 # include <cuda_runtime.h>
 # include "cublas_v2.h"
+# define IDX2F(i,j,ld) ((((j)-1)*(ld))+((i)-1))
 # define IDX2C(i,j,ld) (((j)*(ld))+(i))
 
-int gemm(float *a,float *b,float *c,int m,int k,int n, float al, float bet, float *biases){
+int take(float *padded,float *ind,float *c){
 	cudaError_t cudaStat ; // cudaMalloc status
 	cublasStatus_t stat ; // CUBLAS functions status
 	cublasHandle_t handle ; // CUBLAS context

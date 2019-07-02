@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import numpy as np
 from nnet.functions import *
+from ctypes import CDLL,c_int,c_void_p
+
+ctake=CDLL("libctake.so")
 
 sd=np.random.randint(1000)
 print("Seed:",sd)
@@ -51,6 +54,7 @@ class conv2d:
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
+		self.coled=np.empty((self.batches,*self.ind.shape),dtype=np.float32).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
@@ -77,18 +81,22 @@ class conv2d:
 			window=(np.arange(self.kernel_size)[:,None]*self.prow+np.arange(self.kernel_size)).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
+			self.coled=np.empty((self.batches,*self.ind.shape),dtype=np.float32).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		if self.batches!=batches:
 			self.batches=batches
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
-			self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
+			# self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
+			self.coled=np.empty((self.batches,*self.ind.shape),dtype=np.float32).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
-		for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
+		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 			# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)
-			self.output[i]=np.dot(img.take(self.ind), self.kern)
+			# self.output[i]=np.dot(img.take(self.ind), self.kern)
 		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		# output=(np.dot(np.take(padded, bind).reshape(-1,self.channels*kernel_size*kernel_size), self.kern)+self.biases)
 					# [self.batches*self.out_row*self.out_col,self.channels*kernel_size*kernel_size] . [self.channels*kernel_size*kernel_size, self.num_kernels]
+		ctake.take(c_void_p(self.padded.ctypes.data),c_void_p(self.ind.ctypes.data),c_void_p(self.coled.ctypes.data),c_int(self.batches),c_int(self.padded[0].size),c_int(self.ind.size),c_int(self.coled.shape[0]),c_int(self.coled.shape[1]),ord('C'),c_int(4))
+		self.output=self.coled.dot(self.kern)
 		if self.biases is not 0:
 			self.output+=self.biases
 		self.z_out=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)

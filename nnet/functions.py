@@ -15,7 +15,7 @@ def sigmoid(z,a=None,derivative=False):
 		return 1.0/(1+np.exp(-z))
 
 def elliot(z,a=None, derivative=False):
-	""" A fast approximation of sigmoid """
+	# A fast approximation of sigmoid
 	abs_signal=(1+np.abs(z))
 	if derivative:
 		return 0.5/abs_signal**2

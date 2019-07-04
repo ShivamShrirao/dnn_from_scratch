@@ -3,7 +3,8 @@ import numpy as np
 from nnet.functions import *
 from ctypes import CDLL,c_int,c_void_p
 
-ctake=CDLL("libctake.so")
+ctake=CDLL("libctake.so")	# gcc ctake_threaded.c -fPIC -shared -o libctake.so -O3 -lpthread
+NUM_THREADS = 4
 
 sd=np.random.randint(1000)
 print("Seed:",sd)
@@ -95,7 +96,7 @@ class conv2d:
 		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		# output=(np.dot(np.take(padded, bind).reshape(-1,self.channels*kernel_size*kernel_size), self.kern)+self.biases)
 					# [self.batches*self.out_row*self.out_col,self.channels*kernel_size*kernel_size] . [self.channels*kernel_size*kernel_size, self.num_kernels]
-		ctake.take(c_void_p(self.padded.ctypes.data),c_void_p(self.ind.ctypes.data),c_void_p(self.coled.ctypes.data),c_int(self.batches),c_int(self.padded[0].size),c_int(self.ind.size),c_int(self.coled.shape[0]),c_int(self.coled.shape[1]),ord('C'),c_int(4))
+		ctake.take(c_void_p(self.padded.ctypes.data),c_void_p(self.ind.ctypes.data),c_void_p(self.coled.ctypes.data),c_int(self.batches),c_int(self.padded[0].size),c_int(self.ind.size),c_int(NUM_THREADS))
 		self.output=self.coled.dot(self.kern)
 		if self.biases is not 0:
 			self.output+=self.biases

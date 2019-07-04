@@ -195,10 +195,9 @@ Activations
 
 ## TO-DO
 
-* Fix loading and saving weights for trainig.
+* Fix loading and saving weights for training.
 * Start a server process for visualizing graphs while training.
 * Start a parallel process which is notified to use optimizer and update weights.
-* Split batches to processes.
 * Comments.
 * L2 norm Regulization.
 * Lots of performance and memory improvement.

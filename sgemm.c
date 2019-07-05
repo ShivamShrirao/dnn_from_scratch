@@ -3,44 +3,79 @@
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
 
-int gemm(float *a,float *b,float *c,int m,int n,int k, float al, float bet, float *biases){
-	cudaError_t cudaStat ; // cudaMalloc status
-	cublasStatus_t stat ; // CUBLAS functions status
-	cublasHandle_t handle ; // CUBLAS context
-	// on the device
+// nvcc sgemm.c -lcublas --compiler-options '-fPIC' -shared -o libsgemm.so -O3
+
+cublasHandle_t HANDLE; // CUBLAS context
+
+cublasStatus_t createHandle(){
+	cublasCreate(&HANDLE); // initialize CUBLAS context
+}
+
+cublasStatus_t gemm(char tra,char trb,float *a,float *b,float *c,int m,int n,int k,int lda, int ldb, int ldc,float al, float bet, float *biases){
+	// cudaError_t cudaStat; // cudaMalloc status
+	cublasStatus_t stat; // CUBLAS functions status
 	float *d_a=a; // d_a - a on the device
 	float *d_b=b; // d_b - b on the device
 	float *d_c=c; // d_c - c on the device
-
-	cudaStat = cudaMalloc((void**)&d_a,k*m*sizeof(*a));
-	// memory alloc for a
-	printf("a:k,m:%dx%d\n",k,m);
-	cudaStat = cudaMalloc((void**)&d_b,n*k*sizeof(*b));
-	// memory alloc for b
-	printf("b:n,k:%dx%d\n",n,k);
-	cudaStat = cudaMalloc((void**)&d_c,m*n*sizeof(*c));
+	// cudaStat = cudaMalloc((void**)&d_a,m*k*sizeof(float));
+	// // memory alloc for a
+	// cudaStat = cudaMalloc((void**)&d_b,n*k*sizeof(float));
+	// // memory alloc for b
+	// cudaStat = cudaMalloc((void**)&d_c,m*n*sizeof(float));
 	// memory alloc for c
-	printf("c:m,n:%dx%d\n",m,n);
+	cublasOperation_t transa,transb;
+	if(tra=='T')
+		transa=CUBLAS_OP_T;
+	else
+		transa=CUBLAS_OP_N;
+	if(trb=='T')
+		transb=CUBLAS_OP_T;
+	else
+		transb=CUBLAS_OP_N;
+	// stat = cublasSetMatrix(lda,k,sizeof(float),a,lda,d_a,lda); //a -> d_a
+	// cudaStat = cudaMemcpy(d_a, a, lda*k*sizeof(float), cudaMemcpyHostToDevice);
+	// cudaStat = cudaMemcpy(d_b, b, ldb*k*sizeof(float), cudaMemcpyHostToDevice);
+	printf("b:%d\n", ldb*k);
+	printf("%d %d %d\n", m,n,k);
+	stat = cublasSgemm(HANDLE,
+					transa, transb,
+					m, n, k,
+					&al,
+					d_a, lda,
+					d_b, ldb,
+					&bet,
+					d_c, ldc);
+	// cudaStat = cudaMemcpy(c, d_c, m*n*sizeof(float), cudaMemcpyDeviceToHost);
+	// cudaFree(d_a); // free device memory
+	// cudaFree(d_b); // free device memory
+	// cudaFree(d_c); // free device memory
+	return stat;
+}
 
-	stat = cublasCreate(&handle); // initialize CUBLAS context
+cublasStatus_t transpose(float *a,float *at,int m,int n,float al, float bet){
+	/*
+	sgemm.transpose(dgg.device_ctypes_pointer,
+					dgt.device_ctypes_pointer,
+					ctypes.c_int(n),ctypes.c_int(m),
+					ctypes.c_float(al),ctypes.c_float(bet))
+	*/
+	cublasStatus_t stat; // CUBLAS functions status
+	float *d_a=a; // d_a - a on the device
+	float *d_T=at;
 
-	// copy matrices from the host to the device
-	stat = cublasSetMatrix(k,m,sizeof(*a),a,k,d_a,k); //a -> d_a
-	stat = cublasSetMatrix(n,k,sizeof(*b),b,n,d_b,n); //b -> d_b
+	stat = cublasSgeam(HANDLE,
+					CUBLAS_OP_T, CUBLAS_OP_N,
+					n, m,
+					&al,
+					d_a, m,
+					&bet,
+					d_T, n,		//n
+					d_T, n);	//n
+	// cudaStat = cudaMemcpy(c, d_c, m*n*sizeof(float), cudaMemcpyDeviceToHost);
+	// cudaFree(d_a); // free device memory
+	return stat;
+}
 
-	// //stat = cublasSetMatrix(m,n,sizeof(*c),c,m,d_c,m); //c -> d_c
-	// matrix - matrix multiplication : d_c = al*d_a *d_b + bet *d_c
-	// d_a -mxk matrix , d_b -kxn matrix , d_c -mxn matrix
-	// al ,bet -scalars
-	stat = cublasSgemm(handle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, k, &al, d_a, k, d_b, n, &bet, d_c, m);
-
-	stat = cublasGetMatrix(m,n,sizeof(*c),d_c,m,c,m); // cp d_c - >c
-
-	cudaFree(d_a); // free device memory
-	cudaFree(d_b); // free device memory
-	cudaFree(d_c); // free device memory
-
-	cublasDestroy(handle); // destroy CUBLAS context
-
-	return cudaStat;
+cublasStatus_t destroyHandle(){
+	cublasDestroy(HANDLE); // destroy CUBLAS context
 }

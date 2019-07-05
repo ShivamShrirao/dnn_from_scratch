@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+// gcc ctake_threaded.c -fPIC -shared -o libctake.so -O3 -lpthread
+
 typedef struct arguments
 {
 	float *coled, *padded;

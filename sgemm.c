@@ -11,7 +11,7 @@ cublasStatus_t createHandle(){
 	cublasCreate(&HANDLE); // initialize CUBLAS context
 }
 
-cublasStatus_t gemm(char tra,char trb,float *a,float *b,float *c,int m,int n,int k,int lda, int ldb, int ldc,float al, float bet, float *biases){
+cublasStatus_t gemm(char tra,char trb,int m,int n,int k,float al,float *a,int lda,float *b, int ldb,float bet,float *c,int ldc,float *biases){
 	// cudaError_t cudaStat; // cudaMalloc status
 	cublasStatus_t stat; // CUBLAS functions status
 	float *d_a=a; // d_a - a on the device
@@ -35,8 +35,6 @@ cublasStatus_t gemm(char tra,char trb,float *a,float *b,float *c,int m,int n,int
 	// stat = cublasSetMatrix(lda,k,sizeof(float),a,lda,d_a,lda); //a -> d_a
 	// cudaStat = cudaMemcpy(d_a, a, lda*k*sizeof(float), cudaMemcpyHostToDevice);
 	// cudaStat = cudaMemcpy(d_b, b, ldb*k*sizeof(float), cudaMemcpyHostToDevice);
-	printf("b:%d\n", ldb*k);
-	printf("%d %d %d\n", m,n,k);
 	stat = cublasSgemm(HANDLE,
 					transa, transb,
 					m, n, k,
@@ -53,7 +51,7 @@ cublasStatus_t gemm(char tra,char trb,float *a,float *b,float *c,int m,int n,int
 }
 
 cublasStatus_t transpose(float *a,float *at,int m,int n,float al, float bet){
-	/*
+	/*	Python method
 	sgemm.transpose(dgg.device_ctypes_pointer,
 					dgt.device_ctypes_pointer,
 					ctypes.c_int(n),ctypes.c_int(m),

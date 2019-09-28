@@ -11,7 +11,7 @@ print("Seed:",sd)
 np.random.seed(sd)
 seq_instance=None
 
-class conv2d:
+class conv2d:									# TO-DO: explore __func__,  input layer=....
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.01,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
@@ -196,10 +196,12 @@ class dense:
 		else:
 			self.name=name
 		if input_shape is None:
-			input_shape=seq_instance.get_inp_shape()[0]
+			self.input_shape=seq_instance.get_inp_shape()[0]
+		else:
+			self.input_shape=input_shape
 		self.activation=activation
-		self.weights = std*np.random.randn(input_shape,num_out).astype(self.dtype) + mean
-		# weights/=np.sqrt(input_shape)
+		self.weights = std*np.random.randn(self.input_shape,num_out).astype(self.dtype) + mean
+		# weights/=np.sqrt(self.input_shape)
 		self.biases = std*np.random.randn(1,num_out).astype(self.dtype) + mean
 		self.kernels = self.weights
 		self.w_m=0
@@ -207,7 +209,7 @@ class dense:
 		self.b_m=0
 		self.b_v=0
 		self.shape=(None,num_out)
-		self.param=input_shape*num_out + num_out
+		self.param=self.input_shape*num_out + num_out
 		self.cross_entrp=False
 
 	def forward(self,inp,training=True):
@@ -358,6 +360,9 @@ class InputLayer:
 		self.name='input_layer'
 		self.type=self.__class__.__name__
 		self.dtype=np.float32
-		self.shape=(None,*shape)
+		try:
+			self.shape=(None,*shape)
+		except:
+			self.shape=(None,shape)
 		self.param=0
 		self.activation=echo

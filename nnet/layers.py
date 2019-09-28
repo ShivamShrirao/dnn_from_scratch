@@ -11,7 +11,7 @@ print("Seed:",sd)
 np.random.seed(sd)
 seq_instance=None
 
-class conv2d:									# TO-DO: explore __func__,  input layer=....
+class conv2d:						# TO-DO: explore __func__,  input layer=....
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.01,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:

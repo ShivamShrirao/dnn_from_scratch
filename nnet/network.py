@@ -93,12 +93,12 @@ class Sequential:
 		print(chr(9149)*reps)
 		print("Layer (type)".ljust(25)," Output Shape".ljust(25),"Activation".ljust(17),"Param #")
 		print('='*reps)
-		print('{}({})'.format(ipl.name,ipl.type).ljust(25),'{}'.format(ipl.shape).ljust(25),' {}'.format(ipl.activation.__name__).ljust(17),ipl.param)
+		print('0 {}({})'.format(ipl.name,ipl.type).ljust(25),'{}'.format(ipl.shape).ljust(25),' {}'.format(ipl.activation.__name__).ljust(17),ipl.param)
 		self.total_param=0
 		self.non_train_param=0
 		for i,obj in enumerate(self.sequence):
 			print('_'*reps)
-			print('{} {}({})'.format(i,obj.name,obj.type).ljust(25)[:25],'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
+			print('{} {}({})'.format(i+1,obj.name,obj.type).ljust(25)[:25],'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
 			self.total_param+=obj.param
 			if obj.__class__==layers.BatchNormalization:
 				self.non_train_param+=obj.param//2

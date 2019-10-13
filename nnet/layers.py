@@ -188,7 +188,7 @@ class flatten:
 		return errors.reshape(-1,self.r,self.c,self.channels)
 
 class dense:
-	def __init__(self,num_out,input_shape=None,activation=echo,mean=0,std=0.01,name=None):
+	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
@@ -200,9 +200,21 @@ class dense:
 		else:
 			self.input_shape=input_shape
 		self.activation=activation
-		self.weights = std*np.random.randn(self.input_shape,num_out).astype(self.dtype) + mean
-		# weights/=np.sqrt(self.input_shape)
-		self.biases = std*np.random.randn(1,num_out).astype(self.dtype) + mean
+		if weights is None:
+			self.weights = std*np.random.randn(self.input_shape,num_out).astype(self.dtype) + mean
+			# weights/=np.sqrt(self.input_shape)
+		else:
+			if weights.shape!=(self.input_shape,num_out):
+				raise Exception("weights should be of shape: "+str((self.input_shape,num_out)))
+			else:
+				self.weights = weights
+		if biases is None:
+			self.biases = std*np.random.randn(1,num_out).astype(self.dtype) + mean
+		else:
+			if biases.shape!=(1,num_out):
+				raise Exception("biases should be of shape: "+str((1,num_out)))
+			else:
+				self.biases = biases
 		self.kernels = self.weights
 		self.w_m=0
 		self.w_v=0
@@ -219,7 +231,7 @@ class dense:
 		return self.a_out
 
 	def backprop(self,errors,layer=1):
-		if (self.activation!=echo) and (not self.cross_entrp):
+		if (self.activation!=echo) and (not self.cross_entrp):			# prolly make it better
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		d_c_b=errors
 		self.d_c_w=np.dot(self.inp.T,d_c_b)/self.inp.shape[0]

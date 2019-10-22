@@ -9,7 +9,7 @@ def iterative(sequence,learning_rate=0.01,beta=0):			#fld
 			obj.weights-=learning_rate*obj.d_c_w
 			obj.biases-=learning_rate*obj.d_c_b
 
-def momentum(sequence,learning_rate=0.01,beta1=0.9,weight_decay=0.0005):#fld	# will have to specify it
+def momentum(sequence,learning_rate=0.1,beta1=0.9,weight_decay=0.0005):#fld	# will have to specify it
 	for obj in sequence:
 		if obj.param>0:
 			obj.w_m=beta1*obj.w_m - learning_rate*obj.d_c_w - weight_decay*learning_rate*obj.weights

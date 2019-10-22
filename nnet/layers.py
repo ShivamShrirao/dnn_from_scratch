@@ -231,7 +231,7 @@ class dense:
 		return self.a_out
 
 	def backprop(self,errors,layer=1):
-		if (self.activation!=echo) and (not self.cross_entrp):			# prolly make it better in future
+		if (self.activation!=echo) and (not self.cross_entrp):			# make it better in future
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		d_c_b=errors
 		self.d_c_w=np.dot(self.inp.T,d_c_b)/self.inp.shape[0]
@@ -351,7 +351,7 @@ class Activation:
 		else:
 			self.name=name
 		if input_shape is None:
-			input_shape=seq_instance.get_inp_shape()[0]
+			input_shape=seq_instance.get_inp_shape()
 		self.activation=activation
 		self.shape=(None,*input_shape)
 		self.param=0

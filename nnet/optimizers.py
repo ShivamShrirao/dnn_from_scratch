@@ -3,13 +3,13 @@ import numpy as np
 
 ### CAN TURN THESE INTO CLASSES
 
-def iterative(sequence,learning_rate=0.01):
+def iterative(sequence,learning_rate=0.01,beta=0):			#fld
 	for obj in sequence:
 		if obj.param>0:
 			obj.weights-=learning_rate*obj.d_c_w
 			obj.biases-=learning_rate*obj.d_c_b
 
-def momentum(sequence,learning_rate=0.01,beta1=0.9,weight_decay=0.0005):	# will have to specify it
+def momentum(sequence,learning_rate=0.01,beta1=0.9,weight_decay=0.0005):#fld	# will have to specify it
 	for obj in sequence:
 		if obj.param>0:
 			obj.w_m=beta1*obj.w_m - learning_rate*obj.d_c_w - weight_decay*learning_rate*obj.weights
@@ -63,7 +63,7 @@ def adamax(sequence,learning_rate=0.002,beta1=0.9,beta2=0.999,epsilon=1e-8):
 			obj.b_v=np.maximum(beta2*obj.b_v,abs(obj.d_c_b))
 			obj.biases-=(learning_rate/(1-beta1))*(obj.b_m/(obj.b_v+epsilon))
 
-def adadelta(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-8):
+def adadelta(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-8):			# fld
 	for obj in sequence:
 		if obj.param>0:
 			obj.w_v=beta1*obj.w_v + (1-beta1)*(obj.d_c_w**2)

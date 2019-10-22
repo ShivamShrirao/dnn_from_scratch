@@ -3,7 +3,7 @@ import numpy as np
 from nnet.functions import *
 from ctypes import CDLL,c_int,c_void_p
 
-ctake=CDLL("libctake.so")	# gcc ctake_threaded.c -fPIC -shared -o libctake.so -O3 -lpthread
+ctake=CDLL("nnet/libctake.so")	# gcc nnet/ctake_threaded.c -fPIC -shared -o nnet/libctake.so -O3 -lpthread
 NUM_THREADS = 4
 
 sd=np.random.randint(1000)
@@ -231,7 +231,7 @@ class dense:
 		return self.a_out
 
 	def backprop(self,errors,layer=1):
-		if (self.activation!=echo) and (not self.cross_entrp):			# prolly make it better
+		if (self.activation!=echo) and (not self.cross_entrp):			# prolly make it better in future
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		d_c_b=errors
 		self.d_c_w=np.dot(self.inp.T,d_c_b)/self.inp.shape[0]

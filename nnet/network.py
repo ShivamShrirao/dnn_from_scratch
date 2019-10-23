@@ -9,9 +9,9 @@ from gc import collect
 ### TO-DO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
 
 class Sequential:
-	def __init__(self):
+	def __init__(self,sequence=[]):
 		layers.seq_instance=self
-		self.sequence=[]
+		self.sequence=sequence
 		self.learning_rate=0.001
 
 	def add(self,obj):

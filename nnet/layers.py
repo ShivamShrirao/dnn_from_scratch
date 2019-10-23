@@ -110,14 +110,14 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=errors
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
-		self.d_c_w/=self.batches		#take mean change over batches
+		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]
 		if layer:
 			d_inputs=self.d_inp.forward(errors)
 		else:
 			d_inputs=0
-		self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
-
+		self.d_c_b=self.d_ker.kern.sum(axis=0,keepdims=True)
+		# self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
 		return d_inputs
 
 class max_pool:
@@ -234,12 +234,13 @@ class dense:
 		if (self.activation!=echo) and (not self.cross_entrp):			# make it better in future
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		d_c_b=errors
-		self.d_c_w=np.dot(self.inp.T,d_c_b)/self.inp.shape[0]
+		self.d_c_w=np.dot(self.inp.T,d_c_b)#/self.inp.shape[0]
 		if layer:
 			d_c_a=np.dot(d_c_b,self.weights.T)
 		else:
 			d_c_a=0
-		self.d_c_b=d_c_b.mean(axis=0,keepdims=True)
+		self.d_c_b=d_c_b.sum(axis=0,keepdims=True)
+		# self.d_c_b=d_c_b.mean(axis=0,keepdims=True)
 		return d_c_a
 
 class dropout:

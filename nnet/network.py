@@ -9,9 +9,9 @@ from gc import collect
 ### TO-DO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
 
 class Sequential:
-	def __init__(self,sequence=[]):
+	def __init__(self):
 		layers.seq_instance=self
-		self.sequence=sequence
+		self.sequence=[]
 		self.learning_rate=0.001
 
 	def add(self,obj):
@@ -20,32 +20,38 @@ class Sequential:
 	def get_inp_shape(self):
 		return self.sequence[-1].shape[1:]
 
-	def predict(self,X_inp):
-		self.svd_inp=X_inp[:1]
+	def forward(self,X_inp,training=True):
 		for obj in self.sequence:
-			X_inp=obj.forward(X_inp,training=False)
+			X_inp=obj.forward(X_inp,training=training)
 		return X_inp
 
-	def fit(self,X_inp,labels):
-		for obj in self.sequence:
-			X_inp=obj.forward(X_inp)
-		err=self.del_loss(X_inp,labels)
-		i=self.lenseq_m1
+	def backprop(self,err,i):
 		for obj in self.sequence[::-1]:
 			err=obj.backprop(err,layer=i)
 			i-=1
+		return err
+
+	def predict(self,X_inp):
+		self.svd_inp=X_inp[:1]
+		return self.forward(X_inp,training=False)
+
+	def fit(self,X_inp,labels):
+		X_inp=self.forward(X_inp)
+		err=self.del_loss(X_inp,labels)
+		self.backprop(err,self.lenseq_m1)
 		self.optimizer(self.sequence,self.learning_rate,self.beta)
 		return X_inp
 
+	def not_fit(self,X_inp,labels):
+		X_inp=self.forward(X_inp,training=False)
+		err=self.del_loss(X_inp,labels)
+		err=self.backprop(err,self.lenseq_m1)
+		return X_inp,err
+
 	def free(self):			#just to free memory of large batch after predict
 		X_inp=self.svd_inp
-		for obj in self.sequence:
-			X_inp=obj.forward(X_inp,training=False)
-		err=X_inp
-		i=self.lenseq_m1
-		for obj in self.sequence[::-1]:
-			err=obj.backprop(err,layer=i)
-			i-=1
+		err=self.forward(X_inp,False)
+		self.backprop(err,self.lenseq_m1)
 		collect()
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):

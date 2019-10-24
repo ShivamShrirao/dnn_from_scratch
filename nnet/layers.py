@@ -223,6 +223,10 @@ class dense:
 		self.shape=(None,num_out)
 		self.param=self.input_shape*num_out + num_out
 		self.cross_entrp=False
+		if self.activation==echo:
+			self.notEcho=False
+		else:
+			self.notEcho=True
 
 	def forward(self,inp,training=True):
 		self.inp=inp
@@ -231,7 +235,7 @@ class dense:
 		return self.a_out
 
 	def backprop(self,errors,layer=1):
-		if (self.activation!=echo) and (not self.cross_entrp):			# make it better in future
+		if self.notEcho and (not self.cross_entrp):			# make it better in future
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		d_c_b=errors
 		self.d_c_w=np.dot(self.inp.T,d_c_b)#/self.inp.shape[0]
@@ -357,6 +361,10 @@ class Activation:
 		self.shape=(None,*input_shape)
 		self.param=0
 		self.cross_entrp=False
+		if self.activation==echo:
+			self.notEcho=False
+		else:
+			self.notEcho=True
 
 	def forward(self,inp,training=True):
 		self.z_out=inp
@@ -364,7 +372,7 @@ class Activation:
 		return self.a_out
 
 	def backprop(self,errors,layer=1):
-		if (self.activation!=echo) and (not self.cross_entrp):
+		if self.notEcho and (not self.cross_entrp):
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		return errors
 

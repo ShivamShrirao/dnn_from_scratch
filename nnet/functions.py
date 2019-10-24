@@ -11,7 +11,7 @@ def sigmoid(z,a=None,derivative=False):
 	if derivative:
 		return a*(1-a)
 	else:
-		z=np.clip(z,-500,500)
+		z=z.clip(-500,500)
 		return 1.0/(1+np.exp(-z))
 
 def elliot(z,a=None, derivative=False):

@@ -133,6 +133,7 @@ model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits
 * sigmoid
 * elliot
 * relu
+* leakyRelu
 * elu
 * tanh
 * softmax

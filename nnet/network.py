@@ -45,7 +45,7 @@ class Sequential:
 	def not_fit(self,X_inp,labels):
 		X_inp=self.forward(X_inp,training=False)
 		err=self.del_loss(X_inp,labels)
-		err=self.backprop(err,self.lenseq_m1)
+		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 
 	def free(self):			#just to free memory of large batch after predict

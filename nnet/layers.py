@@ -75,7 +75,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		return weights.astype(self.dtype), bias.astype(self.dtype)
 
 	def forward(self,inp,training=True):
-		self.inp=inp.transpose(0,3,1,2)  #inp[batches,channels,row,col]
+		self.inp=inp.transpose(0,3,1,2)
+		#inp[batches,channels,row,col]
 		batches,channels=self.inp.shape[:2]
 		if self.channels!=channels:
 			self.channels=channels

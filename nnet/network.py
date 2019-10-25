@@ -14,6 +14,7 @@ class Sequential:
 		self.sequence=[]
 		self.learning_rate=0.001
 		self.dtype=np.float32
+		self.COLED=None
 
 	def add(self,obj):
 		self.sequence.append(obj)

@@ -60,10 +60,10 @@ def softmax(z,a=None,derivative=False):
 def cross_entropy_with_logits(logits,labels,epsilon=1e-12):
 	return -np.sum(labels*np.log(logits+epsilon),axis=0,keepdims=True)
 
-def gan_loss(logits,labels,epsilon=1e-12):
+def cross_entropy(logits,labels,epsilon=1e-12):
 	labels=labels.clip(epsilon,1-epsilon)
 	logits=logits.clip(epsilon,1-epsilon)
-	return np.mean(-labels*np.log(logits)-(1-labels)*np.log(1-logits),axis=0,keepdims=True)
+	return -labels*np.log(logits)-(1-labels)*np.log(1-logits)
 
 def del_cross_sigmoid(logits,labels):
 	return (logits-labels)

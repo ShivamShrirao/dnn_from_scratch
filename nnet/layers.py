@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 from nnet.functions import *
+from nnet.coled_tracker import coled_tracker
 from ctypes import CDLL,c_int,c_void_p
 from os import path
 
@@ -10,7 +11,8 @@ NUM_THREADS = 4
 sd=np.random.randint(1000)
 print("Seed:",sd)
 np.random.seed(sd)
-seq_instance=None
+seq_instance=None		# fix this. It's same for multiple models
+COLT=coled_tracker()
 
 class conv2d:						# TO-DO: explore __func__,  input layer=....
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.01,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
@@ -56,17 +58,24 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
-		self.coled=np.empty((self.batches,*self.ind.shape),dtype=np.float32).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+		# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+		self.get_coled()
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
 			self.init_back()
+
+	def get_coled(self):
+		global COLT
+		self.coled=COLT.alloc(self.ind.size*self.batches).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
 		pad=(self.kernel_size-1)//2
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,padding=pad,backp=False)
 		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,backp=False)
+
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
 		weights = std*np.random.randn(*shape) + mean
@@ -84,12 +93,15 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			window=(np.arange(self.kernel_size)[:,None]*self.prow+np.arange(self.kernel_size)).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
-			self.coled=np.empty((self.batches,*self.ind.shape),dtype=np.float32).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			self.get_coled()
+			# self.coled.resize((self.batches*self.ind.shape[0],self.channels*self.kernel_size*self.kernel_size),refcheck=False)
 		if self.batches!=batches:
 			self.batches=batches
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
-			# self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
-			self.coled=np.empty((self.batches,*self.ind.shape),dtype=np.float32).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			self.get_coled()
+			# self.coled.resize((self.batches*self.ind.shape[0],self.channels*self.kernel_size*self.kernel_size),refcheck=False)
 		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
@@ -107,7 +119,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		return self.a_out
 
 	def backprop(self,errors,layer=1):								#strides[batch,row,col,depth]
-		#errors[batches,esz,esz,num_kernels],inp[batches,row,col,channels],kernels(channels,kernel_size,kernel_size,num_kernels),biases[1,num_kernels],stride[row,col]
+		#errors[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,kernel_size,kernel_size,num_kernels),biases[1,num_kernels],stride[row,col]
 		if self.activation != echo:
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=errors

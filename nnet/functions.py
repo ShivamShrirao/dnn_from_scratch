@@ -77,5 +77,5 @@ def mean_squared_error(logits, labels):
 def del_mean_squared_error(logits, labels):
 	return (logits-labels)
 
-def echo(z,a=None,derivative=False):
+def echo(z,a=None,derivative=False,**kwargs):
 	return z

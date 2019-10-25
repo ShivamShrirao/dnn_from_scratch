@@ -116,7 +116,9 @@ model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits
 
 * conv2d
 * max_pool
+* upsampling
 * flatten
+* reshape
 * dense				(Fully connected layer)
 * dropout
 * BatchNormalization

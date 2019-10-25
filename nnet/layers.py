@@ -2,8 +2,9 @@
 import numpy as np
 from nnet.functions import *
 from ctypes import CDLL,c_int,c_void_p
+from os import path
 
-ctake=CDLL("nnet/libctake.so")	# gcc nnet/ctake_threaded.c -fPIC -shared -o nnet/libctake.so -O3 -lpthread
+ctake=CDLL(path.join(path.dirname(__file__),"libctake.so"))	# gcc nnet/ctake_threaded.c -fPIC -shared -o nnet/libctake.so -O3 -lpthread
 NUM_THREADS = 4
 
 sd=np.random.randint(1000)
@@ -225,6 +226,13 @@ class reshape:
 			self.name=name
 		self.input_shape=seq_instance.get_inp_shape()
 		self.target_shape=target_shape
+		tt=1
+		for i in self.input_shape:
+			tt*=i
+		for i in target_shape:
+			tt/=i
+		if tt!=1:
+			raise Exception("Cannot reshape input "+str(self.input_shape)+" to "+str(target_shape)+'.')
 		self.shape=(None,*target_shape)
 		self.param=0
 		self.activation=echo

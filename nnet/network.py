@@ -13,6 +13,7 @@ class Sequential:
 		layers.seq_instance=self
 		self.sequence=[]
 		self.learning_rate=0.001
+		self.dtype=np.float32
 
 	def add(self,obj):
 		self.sequence.append(obj)
@@ -32,19 +33,19 @@ class Sequential:
 		return err
 
 	def predict(self,X_inp):
-		self.svd_inp=X_inp[:1]
-		return self.forward(X_inp,training=False)
+		self.svd_inp=X_inp[:1].astype(self.dtype)
+		return self.forward(X_inp.astype(self.dtype),training=False)
 
 	def fit(self,X_inp,labels):
-		X_inp=self.forward(X_inp)
-		err=self.del_loss(X_inp,labels)
+		X_inp=self.forward(X_inp.astype(self.dtype))
+		err=self.del_loss(X_inp,labels.astype(self.dtype))
 		self.backprop(err,self.lenseq_m1)
 		self.optimizer(self.sequence,self.learning_rate,self.beta)
 		return X_inp
 
 	def not_fit(self,X_inp,labels):
-		X_inp=self.forward(X_inp,training=False)
-		err=self.del_loss(X_inp,labels)
+		X_inp=self.forward(X_inp.astype(self.dtype),training=False)
+		err=self.del_loss(X_inp,labels.astype(self.dtype))
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 

@@ -11,8 +11,7 @@ def sigmoid(z,a=None,derivative=False):
 	if derivative:
 		return a*(1-a)
 	else:
-		z=z.clip(-500,500)
-		return 1.0/(1+np.exp(-z))
+		return 1.0/(1+np.exp(-z.clip(-500,500)))
 
 def elliot(z,a=None, derivative=False):
 	# A fast approximation of sigmoid
@@ -58,8 +57,13 @@ def softmax(z,a=None,derivative=False):
 		exps = np.exp(z-np.max(z, axis=1, keepdims = True))
 		return exps/np.sum(exps, axis=1, keepdims = True)
 
-def cross_entropy_with_logits(logits,labels):
-	return -np.mean(labels*np.log(logits+1e-30),axis=0,keepdims=True)
+def cross_entropy_with_logits(logits,labels,epsilon=1e-12):
+	return -np.sum(labels*np.log(logits+epsilon),axis=0,keepdims=True)
+
+def gan_loss(logits,labels,epsilon=1e-12):
+	labels=labels.clip(epsilon,1-epsilon)
+	logits=logits.clip(epsilon,1-epsilon)
+	return np.mean(-labels*np.log(logits)-(1-labels)*np.log(1-logits),axis=0,keepdims=True)
 
 def del_cross_sigmoid(logits,labels):
 	return (logits-labels)

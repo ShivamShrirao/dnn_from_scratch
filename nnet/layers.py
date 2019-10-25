@@ -166,6 +166,34 @@ class max_pool:
 		else:
 			return z_out.reshape(self.input_shape)
 
+class upsampling:
+	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):
+		#inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
+		self.ksz=ksize[0]
+		self.param=0
+		self.dtype=np.float32
+		self.type=self.__class__.__name__
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		if input_shape is None:
+			input_shape=seq_instance.get_inp_shape()
+		self.batches=1
+		self.row,self.col,self.channels=input_shape
+		self.out_row,self.out_col=self.row*self.ksz,self.col*self.ksz
+		self.shape=(None,self.out_row,self.out_col,self.channels)
+		self.activation=echo
+
+	def forward(self,inp,training=True):
+		self.input_shape=inp.shape
+		return inp.repeat(2,axis=2).repeat(2,axis=1)
+
+	def backprop(self,errors,layer=1):
+		#errors[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
+		errors=errors.reshape(self.input_shape[0],self.row,self.ksz,self.col,self.ksz,self.channels)
+		return errors.sum(axis=(2,4),keepdims=True).reshape(self.input_shape)
+
 class flatten:
 	def __init__(self,name=None):
 		self.type=self.__class__.__name__
@@ -186,6 +214,26 @@ class flatten:
 
 	def backprop(self,errors,layer=1):
 		return errors.reshape(-1,self.r,self.c,self.channels)
+
+class reshape:
+	def __init__(self,target_shape,name=None):
+		self.type=self.__class__.__name__
+		self.dtype=np.float32
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		self.input_shape=seq_instance.get_inp_shape()
+		self.target_shape=target_shape
+		self.shape=(None,*target_shape)
+		self.param=0
+		self.activation=echo
+
+	def forward(self,inp,training=True):
+		return inp.reshape(-1,*self.target_shape)
+
+	def backprop(self,errors,layer=1):
+		return errors.reshape(-1,*self.input_shape)
 
 class dense:
 	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):

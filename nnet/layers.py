@@ -60,6 +60,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
 		# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+		COLT.free()
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
@@ -91,11 +92,13 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			COLT.free()
 		if self.batches!=batches:
 			self.batches=batches
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			COLT.free()
 		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]

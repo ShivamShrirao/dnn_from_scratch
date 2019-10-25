@@ -10,13 +10,32 @@ class coled_tracker:
 		self.objs=set()
 		self.COLED=None
 
-	def alloc(self,coled_size):
+	def alloc(self,coled_size,obj):
 		if self.COLED is None:
 			self.COLED=np.empty(coled_size,dtype=self.dtype)
+			for oo in self.objs:
+				oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+			self.objs.add(obj)
 			return self.COLED
 		else:
 			if self.COLED.size>=coled_size:
+				self.objs.add(obj)
 				return self.COLED.ravel()[:coled_size]
 			else:
 				self.COLED=np.empty(coled_size,dtype=self.dtype)
-				self.coled=self.COLED.ravel()[:self.COLED.size].reshape(self.COLED.shape)
+				for oo in self.objs:
+					oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+				self.objs.add(obj)
+				return self.COLED.ravel()[:coled_size]
+
+	def free(self):
+		obs=list(self.objs)
+		mx=obs[0]
+		for oo in obs:
+			if oo.coled.nbytes>mx.coled.nbytes:
+				mx=oo
+		if self.COLED.nbytes>mx.coled.nbytes:
+			self.COLED=np.empty(mx.coled.size,dtype=self.dtype)
+			for oo in self.objs:
+				oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+		collect()

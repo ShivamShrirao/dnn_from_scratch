@@ -59,15 +59,11 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
 		# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-		self.get_coled()
+		self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		if backp:
 			self.init_back()
-
-	def get_coled(self):
-		global COLT
-		self.coled=COLT.alloc(self.ind.size*self.batches).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
@@ -94,14 +90,12 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-			self.get_coled()
-			# self.coled.resize((self.batches*self.ind.shape[0],self.channels*self.kernel_size*self.kernel_size),refcheck=False)
+			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		if self.batches!=batches:
 			self.batches=batches
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-			self.get_coled()
-			# self.coled.resize((self.batches*self.ind.shape[0],self.channels*self.kernel_size*self.kernel_size),refcheck=False)
+			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]

@@ -14,7 +14,6 @@ class Sequential:
 		self.sequence=[]
 		self.learning_rate=0.001
 		self.dtype=np.float32
-		self.COLED=None
 
 	def add(self,obj):
 		self.sequence.append(obj)
@@ -54,6 +53,7 @@ class Sequential:
 		X_inp=self.svd_inp
 		err=self.forward(X_inp,False)
 		self.backprop(err,self.lenseq_m1)
+		layers.COLT.free()
 		collect()
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):

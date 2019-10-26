@@ -127,7 +127,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			d_inputs=self.d_inp.forward(errors)
 		else:
 			d_inputs=0
-		self.d_c_b=self.d_ker.kern.sum(axis=0,keepdims=True)
+		if self.biases is not 0:
+			self.d_c_b=self.d_ker.kern.sum(axis=0,keepdims=True)
 		# self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
 		return d_inputs
 

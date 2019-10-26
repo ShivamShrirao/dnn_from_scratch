@@ -44,7 +44,7 @@ class Sequential:
 		return X_inp
 
 	def not_train_on_batch(self,X_inp,labels):
-		X_inp=self.forward(X_inp.astype(self.dtype),training=False)
+		X_inp=self.forward(X_inp.astype(self.dtype))
 		err=self.del_loss(X_inp,labels.astype(self.dtype))
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err

@@ -7,6 +7,8 @@ Just made to learn deep working and backpropogation of CNNs and various machine 
 
 Functions are very much like keras. Check Jupyter notebooks for implementation.
 
+GAN implementation in this library: https://github.com/ShivamShrirao/GANs_from_scratch
+
 ### Import modules
 
 ```python

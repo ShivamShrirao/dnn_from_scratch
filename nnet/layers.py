@@ -15,7 +15,7 @@ seq_instance=None		# fix this. It's same for multiple models
 COLT=coled_tracker()
 
 class conv2d:						# TO-DO: explore __func__,  input layer=....
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],padding=0,backp=True,std=0.01,name=None):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
@@ -29,7 +29,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.type=self.__class__.__name__
 		self.input_shape=input_shape
 		self.row,self.col,self.channels=input_shape
-		self.batches=1
+		self.batches=batches
 		self.kernels=kernels
 		self.biases=biases
 		self.w_m=0
@@ -46,15 +46,24 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.kern = self.kernels.reshape(-1,self.num_kernels)
 		self.weights = self.kernels
 		self.padding=padding
-		if not self.padding:							#take care of padding in backprop too
-			self.padding=(self.kernel_size-1)//2					#currently don't give 'even' self.kernel_size
-		self.out_row,self.out_col=((self.row-self.kernel_size+2*self.padding)//stride[0]+1),((self.col-self.kernel_size+2*self.padding)//stride[1]+1)
+		self.dilation=dilation
+		if self.padding is None:							#take care of padding in backprop too
+			self.padding=(self.kernel_size-1)//2					#currently don't give 'even' kernel_size
+		if out_row is None:
+			self.out_row=(self.row-self.kernel_size+2*self.padding-(self.kernel_size-1)*(self.dilation[0]-1))//stride[0]+1
+		else:
+			self.out_row=out_row
+		if out_col is None:
+			self.out_col=(self.col-self.kernel_size+2*self.padding-(self.kernel_size-1)*(self.dilation[0]-1))//stride[1]+1
+		else:
+			self.out_col=out_col
 		self.prow=self.row+2*self.padding
 		self.pcol=self.col+2*self.padding
 		self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 		self.param=(self.kernel_size*self.kernel_size*self.channels+1)*self.num_kernels
 		# Take all windows into a matrix
-		window=(np.arange(self.kernel_size)[:,None]*self.prow+np.arange(self.kernel_size)).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
+		dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
+		window=(np.arange(dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
@@ -68,9 +77,12 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
-		pad=(self.kernel_size-1)//2
+		if (self.stride[0]+self.stride[1])>2:
+			pad=self.padding
+		else:
+			pad=(self.kernel_size-1)//2
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,padding=pad,backp=False)
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=pad,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
 		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,backp=False)
 
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
@@ -87,7 +99,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		if self.channels!=channels:
 			self.channels=channels
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
-			window=(np.arange(self.kernel_size)[:,None]*self.prow+np.arange(self.kernel_size)).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
+			dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
+			window=(np.arange(dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)

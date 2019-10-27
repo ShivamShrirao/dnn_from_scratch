@@ -14,7 +14,10 @@ class coled_tracker:
 		if self.COLED is None:
 			self.COLED=np.empty(coled_size,dtype=self.dtype)
 			for oo in self.objs:
-				oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+				try:
+					oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+				except:
+					self.objs.remove(oo)
 			self.objs.add(obj)
 			return self.COLED
 		else:
@@ -24,7 +27,10 @@ class coled_tracker:
 			else:
 				self.COLED=np.empty(coled_size,dtype=self.dtype)
 				for oo in self.objs:
-					oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+					try:
+						oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+					except:
+						self.objs.remove(oo)
 				self.objs.add(obj)
 				return self.COLED.ravel()[:coled_size]
 
@@ -32,10 +38,14 @@ class coled_tracker:
 		obs=list(self.objs)
 		mx=obs[0]
 		for oo in obs:
-			if oo.coled.nbytes>mx.coled.nbytes:
-				mx=oo
-		if self.COLED.nbytes>mx.coled.nbytes:
-			self.COLED=np.empty(mx.coled.size,dtype=self.dtype)
-			for oo in self.objs:
-				oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+			try:
+				if oo.coled.nbytes>mx.coled.nbytes:
+					mx=oo
+			except:
+				self.objs.remove(oo)
+		if len(self.objs)>0:
+			if self.COLED.nbytes>mx.coled.nbytes:
+				self.COLED=np.empty(mx.coled.size,dtype=self.dtype)
+				for oo in self.objs:
+					oo.coled=self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
 		collect()

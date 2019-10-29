@@ -11,11 +11,15 @@ NUM_THREADS = 4
 sd=np.random.randint(1000)
 print("Seed:",sd)
 np.random.seed(sd)
-seq_instance=None		# fix this. It's same for multiple models
+seq_instance=None		# fix this. It's same for multiple models. Will be fixed by self.previous_layer, or a dict for each instance
 COLT=coled_tracker()
 
+""" 
+Prolly make C code to pad faster.
+"""
+
 class conv2d:						# TO-DO: explore __func__,  input layer=....
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
@@ -47,18 +51,21 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.weights = self.kernels
 		self.padding=padding
 		self.dilation=dilation
+		self.dlate=dlate
+		self.erow=self.row+(self.row-1)*(self.dlate[0]-1)
+		self.ecol=self.col+(self.col-1)*(self.dlate[1]-1)
 		if self.padding is None:							#take care of padding in backprop too
 			self.padding=(self.kernel_size-1)//2					#currently don't give 'even' kernel_size
 		if out_row is None:
-			self.out_row=(self.row-self.kernel_size+2*self.padding-(self.kernel_size-1)*(self.dilation[0]-1))//stride[0]+1
+			self.out_row=(self.erow-self.kernel_size+2*self.padding-(self.kernel_size-1)*(self.dilation[0]-1))//stride[0]+1
 		else:
 			self.out_row=out_row
 		if out_col is None:
-			self.out_col=(self.col-self.kernel_size+2*self.padding-(self.kernel_size-1)*(self.dilation[0]-1))//stride[1]+1
+			self.out_col=(self.ecol-self.kernel_size+2*self.padding-(self.kernel_size-1)*(self.dilation[0]-1))//stride[1]+1
 		else:
 			self.out_col=out_col
-		self.prow=self.row+2*self.padding
-		self.pcol=self.col+2*self.padding
+		self.prow=self.erow+2*self.padding
+		self.pcol=self.ecol+2*self.padding
 		self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 		self.param=(self.kernel_size*self.kernel_size*self.channels+1)*self.num_kernels
 		# Take all windows into a matrix
@@ -78,12 +85,13 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
 		if (self.stride[0]+self.stride[1])>2:
-			pad=self.padding
+			padk=self.padding
+			pade=self.kernel_size-1
 		else:
-			pad=(self.kernel_size-1)//2
+			padk=pade=(self.kernel_size-1)//2
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=pad,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
-		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,backp=False)
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,dlate=self.stride,backp=False,out_row=self.row,out_col=self.col)
 
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
 		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
@@ -112,7 +120,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			COLT.free()
-		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp 		# thos prolly takes time. FIX IF IT DOES.
+		self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 		# thos prolly takes time. FIX IF IT DOES.
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 			# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)
@@ -145,9 +153,13 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		# self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
 		return d_inputs
 
-class conv2dtranspose(object):
-	def __init__(self, arg):
-		self.arg = arg
+class conv2dtranspose(conv2d):
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
+		if padding is None:
+			if (self.stride[0]+self.stride[1])>2:
+				padding=kernel_size-1
+				dlate=stride
+		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
 		
 
 class max_pool:

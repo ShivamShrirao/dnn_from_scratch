@@ -101,8 +101,9 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			distride=self.stride
 			off_transpose=0
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		self.d_ker=conv2d(input_shape=(self.erow,self.ecol,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,dlate=self.dlate,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
 		self.d_ker.is_not_dker=False
+		# self.d_ker.dlate=self.dlate
 		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,stride=distride,dlate=self.stride,padding=padi,off_transpose=off_transpose,backp=False,out_row=self.row,out_col=self.col)
 
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):

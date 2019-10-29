@@ -62,8 +62,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 		self.param=(self.kernel_size*self.kernel_size*self.channels+1)*self.num_kernels
 		# Take all windows into a matrix
-		dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
-		window=(np.arange(dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
+		self.dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
+		window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
@@ -99,8 +99,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		if self.channels!=channels:
 			self.channels=channels
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
-			dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
-			window=(np.arange(dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
+			self.dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
+			window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
@@ -112,7 +112,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			COLT.free()
-		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp
+		self.padded[:,:,self.padding:-self.padding,self.padding:-self.padding]=self.inp 		# thos prolly takes time. FIX IF IT DOES.
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 			# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)
@@ -144,6 +144,11 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			self.d_c_b=self.d_ker.kern.sum(axis=0,keepdims=True)
 		# self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
 		return d_inputs
+
+class conv2dtranspose(object):
+	def __init__(self, arg):
+		self.arg = arg
+		
 
 class max_pool:
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):

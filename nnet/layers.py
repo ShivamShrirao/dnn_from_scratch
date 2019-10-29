@@ -19,7 +19,7 @@ Prolly make C code to pad faster.
 """
 
 class conv2d:						# TO-DO: explore __func__,  input layer=....
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
@@ -70,7 +70,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.param=(self.kernel_size*self.kernel_size*self.channels+1)*self.num_kernels
 		# Take all windows into a matrix
 		self.dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
-		window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
+		self.off_transpose=off_transpose
+		window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol+self.off_transpose
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
 		self.output=np.empty((self.batches,self.out_row*self.out_col,self.num_kernels),dtype=self.dtype)
@@ -85,15 +86,24 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
-		if (self.stride[0]+self.stride[1])>2 or (self.dlate[0]+self.dlate[1])>2:
+		if (self.stride[0]+self.stride[1])>2:
 			padk=self.padding
-			pade=self.kernel_size-1
+			padi=self.kernel_size-1
+			distride=[1,1]
+			off_transpose=0
+		elif (self.dlate[0]+self.dlate[1])>2:
+			padk=self.padding
+			padi=self.kernel_size-1
+			distride=self.dlate
+			off_transpose=(self.out_row+2*padi)*padi+padi
 		else:
-			padk=pade=(self.kernel_size-1)//2
+			padk=padi=(self.kernel_size-1)//2
+			distride=self.stride
+			off_transpose=0
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.d_ker=conv2d(input_shape=(self.erow,self.ecol,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
 		self.d_ker.is_not_dker=False
-		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,dlate=self.stride,backp=False,out_row=self.row,out_col=self.col)
+		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,stride=distride,dlate=self.stride,padding=padi,off_transpose=off_transpose,backp=False,out_row=self.row,out_col=self.col)
 
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
 		weights = std*np.random.randn(num_inp_channels, kernel_size, kernel_size, num_kernels) + mean
@@ -110,7 +120,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			self.batches=batches
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 			self.dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
-			window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
+			window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol+self.off_transpose
 			slider=(np.arange(self.out_row*self.stride[0])[:,None]*self.prow+np.arange(self.out_col*self.stride[1]))
 			self.ind = window.ravel()+slider[::self.stride[0],::self.stride[1]].ravel()[:,None]
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)

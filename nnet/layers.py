@@ -154,11 +154,16 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		return d_inputs
 
 class conv2dtranspose(conv2d):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
-		if padding is None:
-			if (self.stride[0]+self.stride[1])>2:
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[2,2],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
+		if input_shape is None:
+			input_shape=seq_instance.get_inp_shape()
+		out_row=stride[0]*input_shape[0]
+		out_col=stride[1]*input_shape[1]
+		if (stride[0]+stride[1])>2:
+			dlate=stride
+			stride=[1,1]
+			if padding is None:
 				padding=kernel_size-1
-				dlate=stride
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
 		
 

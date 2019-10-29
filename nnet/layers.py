@@ -79,23 +79,24 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		COLT.free()
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
+		self.is_not_dker=True
 		if backp:
 			self.init_back()
 
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		self.flipped=self.kernels[:,::-1,::-1,:].transpose(3,1,2,0)	#flipped[num_kernels,kernel_size,kernel_size,channels]
-		if (self.stride[0]+self.stride[1])>2:
+		if (self.stride[0]+self.stride[1])>2 or (self.dlate[0]+self.dlate[1])>2:
 			padk=self.padding
 			pade=self.kernel_size-1
 		else:
 			padk=pade=(self.kernel_size-1)//2
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		self.d_ker=conv2d(input_shape=(self.erow,self.ecol,self.batches),kernels=errors,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		self.d_ker.is_not_dker=False
 		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,dlate=self.stride,backp=False,out_row=self.row,out_col=self.col)
 
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
-		shape = [num_inp_channels, kernel_size, kernel_size, num_kernels]
-		weights = std*np.random.randn(*shape) + mean
+		weights = std*np.random.randn(num_inp_channels, kernel_size, kernel_size, num_kernels) + mean
 		# weights/=np.sqrt(num_inp_channels)
 		bias = std*np.random.randn(1,num_kernels) + mean
 		return weights.astype(self.dtype), bias.astype(self.dtype)
@@ -104,8 +105,9 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.inp=inp.transpose(0,3,1,2)
 		#inp[batches,channels,row,col]
 		batches,channels=self.inp.shape[:2]
-		if self.channels!=channels:
+		if (self.channels!=channels) or (self.batches!=batches):
 			self.channels=channels
+			self.batches=batches
 			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
 			self.dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
 			window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol
@@ -114,13 +116,10 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			COLT.free()
-		if self.batches!=batches:
-			self.batches=batches
-			self.padded=np.zeros((self.batches,self.channels,self.prow,self.pcol),dtype=self.dtype)
-			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-			COLT.free()
-		self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 		# thos prolly takes time. FIX IF IT DOES.
+			if not self.is_not_dker:
+				self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 	# this takes time. FIX 
+		if self.is_not_dker:
+			self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 	# this takes time. FIX 
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 			# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)
@@ -128,7 +127,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		# output=(np.dot(np.take(padded, bind).reshape(-1,self.channels*kernel_size*kernel_size), self.kern)+self.biases)
 					# [self.batches*self.out_row*self.out_col,self.channels*kernel_size*kernel_size] . [self.channels*kernel_size*kernel_size, self.num_kernels]
-		ctake.take(c_void_p(self.padded.ctypes.data),c_void_p(self.ind.ctypes.data),c_void_p(self.coled.ctypes.data),c_int(self.batches),c_int(self.padded[0].size),c_int(self.ind.size),c_int(NUM_THREADS))
+		ctake.take(c_void_p(np.ascontiguousarray(self.padded).ctypes.data),c_void_p(self.ind.ctypes.data),c_void_p(self.coled.ctypes.data),c_int(self.batches),c_int(self.padded[0].size),c_int(self.ind.size),c_int(NUM_THREADS))
 		self.output=self.coled.dot(self.kern)
 		if self.biases is not 0:
 			self.output+=self.biases
@@ -141,6 +140,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		if self.activation != echo:
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=errors
+		self.d_ker.padded=self.padded.transpose(1,0,2,3)
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
 		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]

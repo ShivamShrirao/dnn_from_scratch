@@ -38,7 +38,7 @@ int take(float *padded,int64_t *ind,float *coled,int batches,int imsz, int indsz
 		arg[td].cutcsz=arg[td].cutb*indsz;
 		arg[td].td=td;
 	}
-	int rem=batches%num_threads;
+	int rem=batches%num_threads;				// ASSUMING BATCH SIZE IS GREATER THAN EQUAL TO NUM THREADS
 	if(rem){
 		arg[num_threads-1].cutb+=rem;
 	}

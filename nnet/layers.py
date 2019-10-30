@@ -151,7 +151,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		if self.activation != echo:
 			errors*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=errors
-		self.d_ker.padded=self.padded.transpose(1,0,2,3)
+		self.d_ker.padded=np.ascontiguousarray(self.padded.transpose(1,0,2,3))
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
 		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.		errors[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]

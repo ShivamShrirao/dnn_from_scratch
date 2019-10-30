@@ -4,6 +4,8 @@ from gc import collect
 
 # For a single shared large memory block to reuse and not repeat allocation
 
+# FIX: If new mem is allocated. Remove the self from objs
+
 class coled_tracker:
 	def __init__(self):
 		self.dtype=np.float32
@@ -11,6 +13,10 @@ class coled_tracker:
 		self.COLED=None
 
 	def alloc(self,coled_size,obj):
+		try:
+			self.objs.remove(obj)
+		except:
+			pass
 		if self.COLED is None:
 			self.COLED=np.empty(coled_size,dtype=self.dtype)
 			for oo in self.objs:

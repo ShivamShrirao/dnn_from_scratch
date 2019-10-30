@@ -71,6 +71,11 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		# Take all windows into a matrix
 		self.dksz=self.kernel_size+(self.kernel_size-1)*(self.dilation[0]-1)
 		self.off_transpose=off_transpose
+		if (self.stride[0]+self.stride[1])>2:
+			if backp:
+				if self.off_transpose==0:
+					cuut=self.padding-self.padding//self.stride[0]
+					self.off_transpose=(self.row+2*self.padding)*cuut+cuut
 		window=(np.arange(self.dksz,step=self.dilation[0])[:,None]*self.prow+np.arange(self.dksz,step=self.dilation[1])).ravel()+np.arange(self.channels)[:,None]*self.prow*self.pcol+self.off_transpose
 		slider=(np.arange(self.out_row*stride[0])[:,None]*self.prow+np.arange(self.out_col*stride[1]))
 		self.ind = window.ravel()+slider[::stride[0],::stride[1]].ravel()[:,None]
@@ -90,21 +95,23 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			padk=self.padding
 			padi=self.kernel_size-1
 			distride=[1,1]
-			off_transpose=0
+			off_transpose_ker=self.off_transpose
+			off_transpose_inp=0
 		elif (self.dlate[0]+self.dlate[1])>2:
 			padk=self.padding
 			padi=self.kernel_size-1
 			distride=self.dlate
-			off_transpose=(self.out_row+2*padi)*padi+padi
+			off_transpose_ker=0
+			off_transpose_inp=(self.out_row+2*padi)*padi+padi
 		else:
 			padk=padi=(self.kernel_size-1)//2
 			distride=self.stride
-			off_transpose=0
+			off_transpose_ker=off_transpose_inp=0
 		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,dlate=self.dlate,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,dlate=self.dlate,padding=padk,backp=False,off_transpose=off_transpose_ker,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
 		self.d_ker.is_not_dker=False
 		# self.d_ker.dlate=self.dlate
-		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,stride=distride,dlate=self.stride,padding=padi,off_transpose=off_transpose,backp=False,out_row=self.row,out_col=self.col)
+		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,stride=distride,dlate=self.stride,padding=padi,off_transpose=off_transpose_inp,backp=False,out_row=self.row,out_col=self.col)
 
 	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01):
 		weights = std*np.random.randn(num_inp_channels, kernel_size, kernel_size, num_kernels) + mean
@@ -128,9 +135,15 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			self.coled=COLT.alloc(self.ind.size*self.batches,self).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
 			COLT.free()
 			if not self.is_not_dker:
-				self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 	# this takes time. FIX 
+				if self.padding:
+					self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 	# this takes time. FIX 
+				else:
+					self.padded[:,:,::self.dlate[0],::self.dlate[1]]=self.inp
 		if self.is_not_dker:
-			self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 	# this takes time. FIX 
+			if self.padding:
+				self.padded[:,:,self.padding:-self.padding:self.dlate[0],self.padding:-self.padding:self.dlate[1]]=self.inp 	# this takes time. FIX 
+			else:
+				self.padded[:,:,::self.dlate[0],::self.dlate[1]]=self.inp
 		self.kern=self.kernels.reshape(-1,self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 			# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)

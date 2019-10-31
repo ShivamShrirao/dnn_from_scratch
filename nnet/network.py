@@ -69,6 +69,7 @@ class Sequential:
 		self.lenseq_m1=len(self.sequence)-1
 
 	def save_weights(self,path):	# has problems if u wanna train the network further. Need to fix that.
+		print("[!] Load and save is bugged. You can use it for saving,loading and prediction but training further from loaded weights isn't working.")
 		sv_me=[]					# OK for just validation and prediction.
 		for obj in self.sequence:
 			if obj.param>0:
@@ -80,6 +81,7 @@ class Sequential:
 			pickle.dump(sv_me,f)
 
 	def load_weights(self,path):
+		print("[!] Load and save is bugged. You can use it for saving,loading and prediction but training further from loaded weights isn't working.")
 		with open(path,'rb') as f:
 			sv_me=pickle.load(f)
 		idx=0

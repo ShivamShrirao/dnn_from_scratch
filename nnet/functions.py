@@ -34,8 +34,8 @@ def elu(z,a=None,derivative=False):			#alpha is 1
 	else:
 		return np.where(z>0, z, np.exp(z)-1)
 
-def leakyRelu(z,a=None,derivative=False):		#alpha is 0.1
-	alpha=0.1
+def leakyRelu(z,a=None,derivative=False):
+	alpha=0.3
 	if derivative:
 		dz = np.ones_like(z,dtype=np.float32)
 		dz[z < 0] = alpha

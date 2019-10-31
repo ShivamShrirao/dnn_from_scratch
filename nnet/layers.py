@@ -40,6 +40,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.w_v=0
 		self.b_m=0
 		self.b_v=0
+		self.d_c_b=0
 		if self.kernels is None:
 			self.kernel_size=kernel_size
 			self.num_kernels=num_kernels

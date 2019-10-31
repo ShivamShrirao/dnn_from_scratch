@@ -3,9 +3,9 @@ import numpy as np
 from nnet.functions import *
 from nnet.coled_tracker import coled_tracker
 from ctypes import CDLL,c_int,c_void_p
-from os import path
+import os
 
-ctake=CDLL(path.join(path.dirname(__file__),"libctake.so"))	# gcc nnet/ctake_threaded.c -fPIC -shared -o nnet/libctake.so -O3 -lpthread
+ctake=CDLL(os.path.join(os.path.dirname(__file__),"libctake.so"))	# gcc nnet/ctake_threaded.c -fPIC -shared -o nnet/libctake.so -O3 -lpthread
 NUM_THREADS = 4
 
 sd=np.random.randint(1000)

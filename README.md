@@ -117,6 +117,7 @@ model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits
 ### Layers avaliable		(nnet.layers)
 
 * conv2d
+* conv2dtranspose
 * max_pool
 * upsampling
 * flatten

@@ -71,7 +71,7 @@ class Sequential:
 	def save_weights(self,path):	# has problems if u wanna train the network further. Need to fix that.
 		print("[!] Load and save is bugged. You can use it for saving,loading and prediction but training further from loaded weights isn't working.")
 		sv_me=[]					# OK for just validation and prediction.
-		for obj in self.sequence:
+		for obj in self.sequence:	# FIX: Prolly d_ker is seeing different kernel
 			if obj.param>0:
 				if obj.__class__==layers.BatchNormalization:
 					sv_me.append((obj.weights,obj.biases,obj.moving_mean,obj.moving_var))

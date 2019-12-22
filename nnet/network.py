@@ -49,7 +49,7 @@ class Sequential:
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 
-	def fit(self,X_inp,labels,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.7):
+	def fit(self,X_inp,labels,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.6):
 		lnxinp=len(X_inp)
 		if validation_data != None:
 			VX,VY=validation_data

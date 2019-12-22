@@ -49,12 +49,14 @@ class Sequential:
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 
-	def fit(self,X_inp,labels,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True):
+	def fit(self,X_inp,labels,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.7):
 		lnxinp=len(X_inp)
 		if validation_data != None:
 			VX,VY=validation_data
 			lnvx=len(VX)
 		acc=0
+		loss=0
+		sam_time=0
 		for epch in range(epochs):
 			print("EPOCH:",epch+1,"/",epochs)
 			s=np.random.permutation(lnxinp)
@@ -75,18 +77,21 @@ class Sequential:
 					else:
 						ans=logits
 						cor=y_inp
-					nacc=100*(ans==cor).mean()
-					acc =0.9*nacc + 0.1*acc**2
-				sample_loss=self.loss(logits=logits,labels=y_inp).mean()
+					nacc=(ans==cor).mean()
+					acc =beta*nacc + (1-beta)*acc
+				sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
+				loss =beta*sample_loss + (1-beta)*loss
 				samtm=time.time()-smtst
+				sam_time=beta*samtm + (1-beta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*samtm)
-				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.3f}".format(str(idx).rjust(6),lnxinp,eta,samtm,sample_loss,acc),end="      .")
+				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,samtm,sample_loss,acc),end="      .")
 			end=time.time()
-			print("\nEpoch time:",end-start)
+			print("\nEpoch time: {:.3f}".format(end-start))
 			if accuracy_metric:
 				vidx=0
-				acc=0
+				vacc=0
+				vloss=0
 				while vidx<=lnvx:
 					inp=VX[vidx:vidx+batch_size]
 					y_inp=VY[vidx:vidx+batch_size]
@@ -98,9 +103,10 @@ class Sequential:
 					else:
 						ans=logits
 						cor=y_inp
-					acc+=(ans==cor).sum()
-					sample_loss=self.loss(logits=logits,labels=y_inp).mean()
-			print("Validation Accuracy:",str(100*acc/lnvx)[:6],"- val_loss:",str(sample_loss)[:6])
+					vacc+=(ans==cor).sum()
+					sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
+					vloss=beta*sample_loss + (1-beta)*vloss
+				print("Validation Accuracy:",str(vacc/lnvx)[:5],"- val_loss:",str(vloss)[:6])
 
 	def free(self):			#just to free memory of large batch after predict
 		X_inp=self.svd_inp

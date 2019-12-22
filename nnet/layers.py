@@ -87,6 +87,10 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		self.is_not_dker=True
+		self.bias_is_not_0=True
+		if np.isscalar(self.biases):
+			if self.biases==0:
+				self.bias_is_not_0=False
 		if backp:
 			self.init_back()
 
@@ -154,7 +158,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 					# [self.batches*self.out_row*self.out_col,self.channels*kernel_size*kernel_size] . [self.channels*kernel_size*kernel_size, self.num_kernels]
 		ctake.take(c_void_p(np.ascontiguousarray(self.padded).ctypes.data),c_void_p(self.ind.ctypes.data),c_void_p(self.coled.ctypes.data),c_int(self.batches),c_int(self.padded[0].size),c_int(self.ind.size),c_int(NUM_THREADS))
 		self.output=self.coled.dot(self.kern)
-		if self.biases:
+		if self.bias_is_not_0:
 			self.output+=self.biases
 		self.z_out=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.a_out=self.activation(self.z_out)
@@ -173,7 +177,7 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			d_inputs=self.d_inp.forward(errors)
 		else:
 			d_inputs=0
-		if self.biases:
+		if self.bias_is_not_0:
 			self.d_c_b=self.d_ker.kern.sum(axis=0,keepdims=True)
 		# self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
 		return d_inputs

@@ -4,7 +4,7 @@ from nnet.functions import *
 from nnet.optimizers import *
 import pickle
 from gc import collect
-
+import time
 
 ### TO-DO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
 
@@ -48,6 +48,59 @@ class Sequential:
 		err=self.del_loss(X_inp,labels.astype(self.dtype))
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
+
+	def fit(self,X_inp,labels,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True):
+		lnxinp=len(X_inp)
+		if validation_data != None:
+			VX,VY=validation_data
+			lnvx=len(VX)
+		acc=0
+		for epch in range(epochs):
+			print("EPOCH:",epch+1,"/",epochs)
+			s=np.random.permutation(lnxinp)
+			X_inp=X_inp[s]
+			labels=labels[s]
+			start=time.time()
+			idx=0
+			while idx<=lnxinp:
+				smtst=time.time()
+				inp=X_inp[idx:idx+batch_size]
+				y_inp=labels[idx:idx+batch_size]
+				idx+=batch_size
+				logits=self.train_on_batch(inp,y_inp)
+				if accuracy_metric:
+					if self.loss==cross_entropy_with_logits:
+						ans=logits.argmax(axis=1)
+						cor=y_inp.argmax(axis=1)
+					else:
+						ans=logits
+						cor=y_inp
+					nacc=100*(ans==cor).mean()
+					acc =0.9*nacc + 0.1*acc**2
+				sample_loss=self.loss(logits=logits,labels=y_inp).mean()
+				samtm=time.time()-smtst
+				rem_sam=(lnxinp-idx)/batch_size
+				eta=int(rem_sam*samtm)
+				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.3f}".format(str(idx).rjust(6),lnxinp,eta,samtm,sample_loss,acc),end="      .")
+			end=time.time()
+			print("\nEpoch time:",end-start)
+			if accuracy_metric:
+				vidx=0
+				acc=0
+				while vidx<=lnvx:
+					inp=VX[vidx:vidx+batch_size]
+					y_inp=VY[vidx:vidx+batch_size]
+					vidx+=batch_size
+					logits=self.predict(inp)
+					if self.loss==cross_entropy_with_logits:
+						ans=logits.argmax(axis=1)
+						cor=y_inp.argmax(axis=1)
+					else:
+						ans=logits
+						cor=y_inp
+					acc+=(ans==cor).sum()
+					sample_loss=self.loss(logits=logits,labels=y_inp).mean()
+			print("Validation Accuracy:",str(100*acc/lnvx)[:6],"- val_loss:",str(sample_loss)[:6])
 
 	def free(self):			#just to free memory of large batch after predict
 		X_inp=self.svd_inp

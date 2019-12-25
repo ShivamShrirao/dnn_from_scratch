@@ -6,7 +6,7 @@ from ctypes import CDLL,c_int,c_void_p
 import os
 
 ctake=CDLL(os.path.join(os.path.dirname(__file__),"libctake.so"))	# gcc nnet/ctake_threaded.c -fPIC -shared -o nnet/libctake.so -O3 -lpthread
-NUM_THREADS = 4
+NUM_THREADS = int(os.popen("nproc").read())
 
 sd=np.random.randint(1000)
 print("Seed:",sd)

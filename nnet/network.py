@@ -54,6 +54,8 @@ class Sequential:
 		if validation_data != None:
 			VX,VY=validation_data
 			lnvx=len(VX)
+		else:
+			lnvx=-1
 		acc=0
 		loss=0
 		sam_time=0

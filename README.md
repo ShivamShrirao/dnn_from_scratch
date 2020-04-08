@@ -174,7 +174,7 @@ model.load_weights("file.dump")
 ## Training graph
 Accuracy             |            Loss
 :-------------------------------:|:-------------------------------:
-![accuracy](/pics/accuracy.png =250x) |  ![loss](/pics/loss.png =250x)
+![accuracy](/pics/accuracy.png | width=250) |  ![loss](/pics/loss.png | width=250)
 
 ## Localization Heatmaps
 ![Heatmap](/pics/localized_heatmap2.png?raw=true)

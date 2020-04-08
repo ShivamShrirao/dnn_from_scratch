@@ -22,7 +22,15 @@ COLT=coled_tracker()
 Prolly make C code to pad faster.
 """
 
-class conv2d:						# TO-DO: explore __func__,  input layer=....
+class Layer:
+	def __init__(self):
+		self.name=self.__class__.__name__
+		self.type=self.__class__.__name__
+		self.dtype=np.float32
+		self.param=0
+		self.activation=echo
+
+class conv2d(Layer):						# TO-DO: explore __func__,  input layer=....
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		if input_shape is None:
@@ -116,8 +124,8 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 			padk=padi=(self.kernel_size-1)//2
 			distride=self.stride
 			off_transpose_ker=off_transpose_inp=0
-		errors=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=errors,activation=echo,dilation=self.stride,dlate=self.dlate,padding=padk,backp=False,off_transpose=off_transpose_ker,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		grads=self.output.reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,dilation=self.stride,dlate=self.dlate,padding=padk,backp=False,off_transpose=off_transpose_ker,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
 		self.d_ker.is_not_dker=False
 		# self.d_ker.dlate=self.dlate
 		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.flipped,activation=echo,stride=distride,dlate=self.stride,padding=padi,off_transpose=off_transpose_inp,backp=False,out_row=self.row,out_col=self.col)
@@ -168,17 +176,17 @@ class conv2d:						# TO-DO: explore __func__,  input layer=....
 		self.a_out=self.activation(self.z_out)
 		return self.a_out
 
-	def backprop(self,errors,layer=1):								#strides[batch,row,col,depth]
-		#errors[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,kernel_size,kernel_size,num_kernels),biases[1,num_kernels],stride[row,col]
+	def backprop(self,grads,layer=1):								#strides[batch,row,col,depth]
+		#grads[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,kernel_size,kernel_size,num_kernels),biases[1,num_kernels],stride[row,col]
 		if self.activation != echo:
-			errors*=self.activation(self.z_out,self.a_out,derivative=True)
-		self.d_ker.kernels=errors
+			grads*=self.activation(self.z_out,self.a_out,derivative=True)
+		self.d_ker.kernels=grads
 		self.d_ker.padded=np.ascontiguousarray(self.padded.transpose(1,0,2,3))
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
 		# self.d_c_w/=self.batches		#take mean change over batches
-		# Backprop for inp.		errors[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]
+		# Backprop for inp.		grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]
 		if layer:
-			d_inputs=self.d_inp.forward(errors)
+			d_inputs=self.d_inp.forward(grads)
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:
@@ -200,7 +208,7 @@ class conv2dtranspose(conv2d):
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
 		
 
-class max_pool:
+class max_pool(Layer):
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):
 		#inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
 		self.ksz=ksize[0]
@@ -237,16 +245,44 @@ class max_pool:
 		self.mask=(inp==output)
 		return output.reshape(self.batches,self.out_row,self.out_col,self.channels)
 
-	def backprop(self,errors,layer=1):
-		#errors[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		z_out=(self.mask*errors.reshape(self.batches,self.out_row,1,self.out_col,1,self.channels))
+	def backprop(self,grads,layer=1):
+		#grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
+		z_out=(self.mask*grads.reshape(self.batches,self.out_row,1,self.out_col,1,self.channels))
 		if self.rem_col:
 			self.padded[:,:-self.rem_col,:-self.rem_col,:]=z_out.reshape(self.batches,self.row,self.col,self.channels)
 			return self.padded.reshape(self.input_shape)
 		else:
 			return z_out.reshape(self.input_shape)
 
-class upsampling:
+class globalAveragePool(Layer):
+	def __init__(self,input_shape=None,name=None):
+		self.type=self.__class__.__name__
+		if name is None:
+			self.name=self.__class__.__name__
+		else:
+			self.name=name
+		if input_shape is None:
+			input_shape=seq_instance.get_inp_shape()
+		self.param=0
+		self.batches=1
+		self.row,self.col,self.channels=input_shape
+		self.Ncount=self.row*self.col
+		self.shape=(None,self.channels)
+		self.activation=echo
+
+	def forward(self,inp,training=True):
+		self.input_shape=inp.shape
+		self.batches=self.input_shape[0]
+		inp=inp.reshape(self.batches,self.Ncount,self.channels)
+		output=inp.mean(axis=1)
+		return output.reshape(self.batches,self.channels)
+
+	def backprop(self,grads,layer=1):
+		# grads/=self.Ncount
+		z_out=grads.repeat(self.Ncount,axis=0).reshape(self.batches,self.row,self.col,self.channels)
+		return z_out
+
+class upsampling(Layer):
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):
 		#inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
 		self.ksz=ksize[0]
@@ -269,12 +305,12 @@ class upsampling:
 		self.input_shape=inp.shape
 		return inp.repeat(2,axis=2).repeat(2,axis=1)
 
-	def backprop(self,errors,layer=1):
-		#errors[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		errors=errors.reshape(self.input_shape[0],self.row,self.ksz,self.col,self.ksz,self.channels)
-		return errors.sum(axis=(2,4),keepdims=True).reshape(self.input_shape)
+	def backprop(self,grads,layer=1):
+		#grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
+		grads=grads.reshape(self.input_shape[0],self.row,self.ksz,self.col,self.ksz,self.channels)
+		return grads.sum(axis=(2,4),keepdims=True).reshape(self.input_shape)
 
-class flatten:
+class flatten(Layer):
 	def __init__(self,name=None):
 		self.type=self.__class__.__name__
 		self.dtype=np.float32
@@ -292,10 +328,10 @@ class flatten:
 	def forward(self,inp,training=True):
 		return inp.reshape(-1,self.fsz)
 
-	def backprop(self,errors,layer=1):
-		return errors.reshape(-1,self.r,self.c,self.channels)
+	def backprop(self,grads,layer=1):
+		return grads.reshape(-1,self.r,self.c,self.channels)
 
-class reshape:
+class reshape(Layer):
 	def __init__(self,target_shape,name=None):
 		self.type=self.__class__.__name__
 		self.dtype=np.float32
@@ -319,10 +355,10 @@ class reshape:
 	def forward(self,inp,training=True):
 		return inp.reshape(-1,*self.target_shape)
 
-	def backprop(self,errors,layer=1):
-		return errors.reshape(-1,*self.input_shape)
+	def backprop(self,grads,layer=1):
+		return grads.reshape(-1,*self.input_shape)
 
-class dense:
+class dense(Layer):
 	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
@@ -357,7 +393,7 @@ class dense:
 		self.b_v=0
 		self.shape=(None,num_out)
 		self.param=self.input_shape*num_out + num_out
-		self.cross_entrp=False
+		self.not_softmax_cross_entrp=True
 		if self.activation==echo:
 			self.notEcho=False
 		else:
@@ -369,10 +405,10 @@ class dense:
 		self.a_out=self.activation(self.z_out)
 		return self.a_out
 
-	def backprop(self,errors,layer=1):
-		if self.notEcho and (not self.cross_entrp):			# make it better in future
-			errors*=self.activation(self.z_out,self.a_out,derivative=True)
-		d_c_b=errors
+	def backprop(self,grads,layer=1):
+		if self.notEcho and self.not_softmax_cross_entrp:			# make it better in future
+			grads*=self.activation(self.z_out,self.a_out,derivative=True)
+		d_c_b=grads
 		self.d_c_w=np.dot(self.inp.T,d_c_b)#/self.inp.shape[0]
 		if layer:
 			d_c_a=np.dot(d_c_b,self.weights.T)
@@ -382,7 +418,7 @@ class dense:
 		# self.d_c_b=d_c_b.mean(axis=0,keepdims=True)
 		return d_c_a
 
-class dropout:
+class dropout(Layer):
 	def __init__(self,rate=0.2,name=None):
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
@@ -407,10 +443,10 @@ class dropout:
 			self.mask=inp
 			return inp
 
-	def backprop(self,errors,layer=1):
-		return errors*self.mask
+	def backprop(self,grads,layer=1):
+		return grads*self.mask
 
-class BatchNormalization:					#Have to add references to each brah
+class BatchNormalization(Layer):					#Have to add references to each brah
 	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
@@ -472,17 +508,17 @@ class BatchNormalization:					#Have to add references to each brah
 				self.xnorm=(inp-self.moving_mean)/np.sqrt(self.moving_var+self.epsilon)
 		return self.xnorm*self.weights+self.biases
 
-	def backprop(self,errors,layer=1):
-		#errors(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#FU
+	def backprop(self,grads,layer=1):
+		#grads(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#FU
 		batches=self.inp_shape[0]
 		if batches!=self.batches:
 			self.batches=batches
-		self.d_c_b=errors.sum(axis=0) 				#(row,col,channels)		# biases is beta
-		self.d_c_w=(self.xnorm*errors).sum(axis=0)	#(row,col,channels)		# gamma is weights
-		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*errors-self.d_c_b-self.xmu*self.ivar*((errors*self.xmu).sum(axis=0)))
+		self.d_c_b=grads.sum(axis=0) 				#(row,col,channels)		# biases is beta
+		self.d_c_w=(self.xnorm*grads).sum(axis=0)	#(row,col,channels)		# gamma is weights
+		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		return d_inp
 
-class Activation:
+class Activation(Layer):
 	def __init__(self,activation=echo,input_shape=None,name=None):
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
@@ -495,7 +531,7 @@ class Activation:
 		self.activation=activation
 		self.shape=(None,*input_shape)
 		self.param=0
-		self.cross_entrp=False
+		self.not_softmax_cross_entrp=True
 		if self.activation==echo:
 			self.notEcho=False
 		else:
@@ -506,13 +542,13 @@ class Activation:
 		self.a_out=self.activation(self.z_out)
 		return self.a_out
 
-	def backprop(self,errors,layer=1):
-		if self.notEcho and (not self.cross_entrp):
-			errors*=self.activation(self.z_out,self.a_out,derivative=True)
-		return errors
+	def backprop(self,grads,layer=1):
+		if self.notEcho and self.not_softmax_cross_entrp:
+			grads*=self.activation(self.z_out,self.a_out,derivative=True)
+		return grads
 
-class InputLayer:
-	def __init__(self,shape):		#just placeholder
+class InputLayer(Layer):
+	def __init__(self,shape=None):		#just placeholder
 		self.name='input_layer'
 		self.type=self.__class__.__name__
 		self.dtype=np.float32

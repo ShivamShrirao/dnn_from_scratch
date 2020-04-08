@@ -49,7 +49,7 @@ class Sequential:
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 
-	def fit(self,X_inp,labels,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.6):
+	def fit(self,X_inp=None,labels=None,iterator=None,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.6):
 		lnxinp=len(X_inp)
 		if validation_data != None:
 			VX,VY=validation_data
@@ -61,15 +61,19 @@ class Sequential:
 		sam_time=0
 		for epch in range(epochs):
 			print("EPOCH:",epch+1,"/",epochs)
-			s=np.random.permutation(lnxinp)
-			X_inp=X_inp[s]
-			labels=labels[s]
+			if iterator==None:
+				s=np.random.permutation(lnxinp)
+				X_inp=X_inp[s]
+				labels=labels[s]
 			start=time.time()
 			idx=0
 			while idx<=lnxinp:
 				smtst=time.time()
-				inp=X_inp[idx:idx+batch_size]
-				y_inp=labels[idx:idx+batch_size]
+				if iterator!=None:
+					inp,y_inp=iterator.next()
+				else:
+					inp=X_inp[idx:idx+batch_size]
+					y_inp=labels[idx:idx+batch_size]
 				idx+=batch_size
 				logits=self.train_on_batch(inp,y_inp)
 				if accuracy_metric:
@@ -89,7 +93,7 @@ class Sequential:
 				eta=int(rem_sam*samtm)
 				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,samtm,sample_loss,acc),end="      .")
 			end=time.time()
-			print("\nEpoch time: {:.3f}".format(end-start))
+			print("\nEpoch time: {:.3f}s".format(end-start))
 			if accuracy_metric:
 				vidx=0
 				vacc=0
@@ -123,7 +127,7 @@ class Sequential:
 		self.learning_rate=learning_rate
 		self.loss=loss
 		if self.loss==cross_entropy_with_logits:
-			self.sequence[-1].cross_entrp=True
+			self.sequence[-1].not_softmax_cross_entrp=False
 			self.del_loss=del_cross_soft
 		elif self.loss==mean_squared_error:
 			self.del_loss=del_mean_squared_error
@@ -164,12 +168,12 @@ class Sequential:
 		print(chr(9149)*reps)
 		print("Layer (type)".ljust(25)," Output Shape".ljust(25),"Activation".ljust(17),"Param #")
 		print('='*reps)
-		print('0 {}({})'.format(ipl.name,ipl.type).ljust(25),'{}'.format(ipl.shape).ljust(25),' {}'.format(ipl.activation.__name__).ljust(17),ipl.param)
+		print('- {}({})'.format(ipl.name,ipl.type).ljust(25),'{}'.format(ipl.shape).ljust(25),' {}'.format(ipl.activation.__name__).ljust(17),ipl.param)
 		self.total_param=0
 		self.non_train_param=0
 		for i,obj in enumerate(self.sequence):
 			print('_'*reps)
-			print('{} {}({})'.format(i+1,obj.name,obj.type).ljust(25)[:25],'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
+			print('{} {}({})'.format(i,obj.name,obj.type).ljust(25)[:25],'{}'.format(obj.shape).ljust(25),' {}'.format(obj.activation.__name__).ljust(17),obj.param)
 			self.total_param+=obj.param
 			if obj.__class__==layers.BatchNormalization:
 				self.non_train_param+=obj.param//2

@@ -49,13 +49,8 @@ class Sequential:
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 
-	def fit(self,X_inp=None,labels=None,iterator=None,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.6):
+	def fit(self,X_inp=None,labels=None,iterator=None,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,beta=0.2):
 		lnxinp=len(X_inp)
-		if validation_data != None:
-			VX,VY=validation_data
-			lnvx=len(VX)
-		else:
-			lnvx=-1
 		acc=0
 		loss=0
 		sam_time=0
@@ -67,7 +62,7 @@ class Sequential:
 				labels=labels[s]
 			start=time.time()
 			idx=0
-			while idx<=lnxinp:
+			while idx<lnxinp:
 				smtst=time.time()
 				if iterator!=None:
 					inp,y_inp=iterator.next()
@@ -91,28 +86,37 @@ class Sequential:
 				sam_time=beta*samtm + (1-beta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*sam_time)
-				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss,acc),end="      .")
+				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss,acc),end="      _")
 			end=time.time()
 			print("\nEpoch time: {:.3f}s".format(end-start))
 			if accuracy_metric:
-				vidx=0
-				vacc=0
-				vloss=0
-				while vidx<=lnvx:
-					inp=VX[vidx:vidx+batch_size]
-					y_inp=VY[vidx:vidx+batch_size]
-					vidx+=batch_size
-					logits=self.predict(inp)
-					if self.loss==cross_entropy_with_logits:
-						ans=logits.argmax(axis=1)
-						cor=y_inp.argmax(axis=1)
-					else:
-						ans=logits
-						cor=y_inp
-					vacc+=(ans==cor).sum()
-					sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
-					vloss=beta*sample_loss + (1-beta)*vloss
-				print("Validation Accuracy:",str(vacc/lnvx)[:5],"- val_loss:",str(vloss)[:6])
+				self.validate(validation_data,batch_size,beta)
+
+	def validate(self,validation_data,batch_size,beta=0.2):
+		if validation_data != None:
+			VX,VY=validation_data
+			lnvx=len(VX)
+		else:
+			lnvx=-1
+		vidx=0
+		vacc=0
+		vloss=0
+		print("Calculating Validation Accuracy....",end="")
+		while vidx<=lnvx:
+			inp=VX[vidx:vidx+batch_size]
+			y_inp=VY[vidx:vidx+batch_size]
+			vidx+=batch_size
+			logits=self.predict(inp)
+			if self.loss==cross_entropy_with_logits:
+				ans=logits.argmax(axis=1)
+				cor=y_inp.argmax(axis=1)
+			else:
+				ans=logits
+				cor=y_inp
+			vacc+=(ans==cor).sum()
+			sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
+			vloss=beta*sample_loss + (1-beta)*vloss
+		print("\rValidation Accuracy:",str(vacc/lnvx)[:5],"- val_loss:",str(vloss)[:6])
 
 	def free(self):			#just to free memory of large batch after predict
 		X_inp=self.svd_inp

@@ -172,32 +172,26 @@ model.load_weights("file.dump")
 ```
 
 ## Training graph
-### Accuracy
-![accuracy](/pics/accuracy.png?raw=true)
-### Loss
-![loss](/pics/loss.png?raw=true)
+            Accuracy             |            Loss
+:-------------------------------:|:-------------------------------:
+ ![accuracy](/pics/accuracy.png =250x) |  ![loss](/pics/loss.png =250x)
+
+## Localization Heatmap.
+![Heatmap](/pics/localized_heatmap2.png?raw=true)
 
 ## Some predictions.
 
 ![automobile](/pics/automobile.png?raw=true)
 ![deer](/pics/deer.png?raw=true)
-![dog](/pics/dog.png?raw=true)
-![horse](/pics/horse.png?raw=true)
 
 ## Visualize Feature Maps
 
-![Airplane](/pics/airplane.png?raw=true)
-![Airplane feature maps](/pics/airplane_feature_maps.png?raw=true)
-![Airplane feature maps](/pics/airplane_feature_maps2.png?raw=true)
+![Airplane feature maps](/pics/airplane_feature_maps2.png)
 
 ### Digit 6 feature maps
 Layer 1
 
-![Number feature maps](/pics/6_feature_maps2.png?raw=true)
-
-Activations
-
-![Number feature maps](/pics/6_feature_maps3.png?raw=true)
+![Number feature maps](/pics/6_feature_maps2.png)
 
 ## TO-DO
 

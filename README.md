@@ -150,7 +150,11 @@ Backprop is fully automated. Just specify layers, loss function and optimizers. 
 ### To train
 
 ```python
-logits=model.fit(inp,y_inp)
+logits=model.fit(X_inp,labels,batch_size=128,epochs=10,validation_data=(X_test,y_test))
+```
+or
+```python
+logits=model.fit(X_inp,iterator=img_iterator,batch_size=128,epochs=10,validation_data=(X_test,y_test))
 ```
 
 ### To predict
@@ -172,11 +176,12 @@ model.load_weights("file.dump")
 ```
 
 ## Training graph
-Accuracy             |            Loss
+Accuracy						 |				Loss
 :-------------------------------:|:-------------------------------:
-![accuracy](/pics/accuracy.png)|  ![loss](/pics/loss.png)
+![accuracy](/pics/accuracy.png)	 |	![loss](/pics/loss.png)
 
 ## Localization Heatmaps
+What the CNN sees
 ![Heatmap](/pics/localized_heatmap2.png?raw=true)
 
 ## Some predictions.

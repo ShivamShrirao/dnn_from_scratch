@@ -90,8 +90,8 @@ class Sequential:
 				samtm=time.time()-smtst
 				sam_time=beta*samtm + (1-beta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
-				eta=int(rem_sam*samtm)
-				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,samtm,sample_loss,acc),end="      .")
+				eta=int(rem_sam*sam_time)
+				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss,acc),end="      .")
 			end=time.time()
 			print("\nEpoch time: {:.3f}s".format(end-start))
 			if accuracy_metric:

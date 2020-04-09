@@ -16,6 +16,8 @@ class Sequential:
 		self.dtype=np.float32
 
 	def add(self,obj):
+		if len(self.sequence)>0:
+			obj(self.sequence[-1])
 		self.sequence.append(obj)
 
 	def get_inp_shape(self):

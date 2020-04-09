@@ -29,10 +29,21 @@ class Layer:
 		self.dtype=np.float32
 		self.param=0
 		self.activation=echo
+		self.input_layer=None
+		self.output_layers=[]
+
+	def __str__(self):
+		return self.name+super().__str__()
+
+	def __call__(self,lyr):
+		self.input_layer=lyr
+		lyr.output_layers.append(self)
+		return self
 
 class conv2d(Layer):						# TO-DO: explore __func__,  input layer=....
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
+		super().__init__()
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
 		if name is None:
@@ -211,6 +222,7 @@ class conv2dtranspose(conv2d):
 class max_pool(Layer):
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):
 		#inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
+		super().__init__()
 		self.ksz=ksize[0]
 		self.param=0
 		self.dtype=np.float32
@@ -256,6 +268,7 @@ class max_pool(Layer):
 
 class globalAveragePool(Layer):
 	def __init__(self,input_shape=None,name=None):
+		super().__init__()
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -285,6 +298,7 @@ class globalAveragePool(Layer):
 class upsampling(Layer):
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):
 		#inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
+		super().__init__()
 		self.ksz=ksize[0]
 		self.param=0
 		self.dtype=np.float32
@@ -312,6 +326,7 @@ class upsampling(Layer):
 
 class flatten(Layer):
 	def __init__(self,name=None):
+		super().__init__()
 		self.type=self.__class__.__name__
 		self.dtype=np.float32
 		if name is None:
@@ -333,6 +348,7 @@ class flatten(Layer):
 
 class reshape(Layer):
 	def __init__(self,target_shape,name=None):
+		super().__init__()
 		self.type=self.__class__.__name__
 		self.dtype=np.float32
 		if name is None:
@@ -360,6 +376,7 @@ class reshape(Layer):
 
 class dense(Layer):
 	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):
+		super().__init__()
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
@@ -420,6 +437,7 @@ class dense(Layer):
 
 class dropout(Layer):
 	def __init__(self,rate=0.2,name=None):
+		super().__init__()
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
@@ -448,6 +466,7 @@ class dropout(Layer):
 
 class BatchNormalization(Layer):					#Have to add references to each brah
 	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
+		super().__init__()
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
@@ -520,6 +539,7 @@ class BatchNormalization(Layer):					#Have to add references to each brah
 
 class Activation(Layer):
 	def __init__(self,activation=echo,input_shape=None,name=None):
+		super().__init__()
 		self.dtype=np.float32
 		self.type=self.__class__.__name__
 		if name is None:
@@ -547,8 +567,9 @@ class Activation(Layer):
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		return grads
 
-class InputLayer(Layer):
-	def __init__(self,shape=None):		#just placeholder
+class InputLayer(Layer):		#just placeholder
+	def __init__(self,shape=None):
+		super().__init__()
 		self.name='input_layer'
 		self.type=self.__class__.__name__
 		self.dtype=np.float32

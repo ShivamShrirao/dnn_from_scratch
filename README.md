@@ -27,28 +27,27 @@ Add each layer to the Sequential model with parameters.
 model = Sequential()
 
 model.add(conv2d(num_kernels=32,kernel_size=3,activation=functions.relu,input_shape=(32,32,3)))
+model.add(conv2d(num_kernels=32,kernel_size=3,activation=functions.relu))
 model.add(BatchNormalization())
 model.add(max_pool())
 model.add(dropout(0.1))
+model.add(conv2d(num_kernels=64,kernel_size=3,activation=functions.relu))
 model.add(conv2d(num_kernels=64,kernel_size=3,activation=functions.relu))
 model.add(BatchNormalization())
 model.add(max_pool())
 model.add(dropout(0.2))
 model.add(conv2d(num_kernels=128,kernel_size=3,activation=functions.relu))
+model.add(conv2d(num_kernels=128,kernel_size=3,activation=functions.relu))
 model.add(BatchNormalization())
-model.add(max_pool())
+model.add(globalAveragePool())
 model.add(dropout(0.3))
-model.add(flatten())
-model.add(dense(512,activation=functions.relu))
-model.add(BatchNormalization())
-model.add(dropout(0.4))
 model.add(dense(10,activation=functions.softmax))
 ```
 
 ### View Model Summary
 
 Shows each layer in a sequence, shape, activations and total, trainable, non-trainable parameters.
-TO-DO-> Show connetions.
+TO-DO-> Show connections.
 
 ```python
 model.summary()
@@ -57,45 +56,43 @@ model.summary()
 ⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽
 Layer (type)               Output Shape             Activation        Param #
 ==========================================================================================
-input_layer (InputLayer)  (None, 32, 32, 3)          echo             0
+- input_layer(InputLayer) (None, 32, 32, 3)          echo             0
 __________________________________________________________________________________________
-conv2d (conv2d)           (None, 32, 32, 32)         relu             896
+0 conv2d(conv2d)          (None, 32, 32, 32)         relu             896
 __________________________________________________________________________________________
-BatchNormalization (Batch (None, 32, 32, 32)         echo             128
+1 conv2d(conv2d)          (None, 32, 32, 32)         relu             9248
 __________________________________________________________________________________________
-max_pool (max_pool)       (None, 16, 16, 32)         echo             0
+2 BatchNormalization(Batc (None, 32, 32, 32)         echo             128
 __________________________________________________________________________________________
-dropout (dropout)         (None, 16, 16, 32)         echo             0
+3 max_pool(max_pool)      (None, 16, 16, 32)         echo             0
 __________________________________________________________________________________________
-conv2d (conv2d)           (None, 16, 16, 64)         relu             18496
+4 dropout(dropout)        (None, 16, 16, 32)         echo             0
 __________________________________________________________________________________________
-BatchNormalization (Batch (None, 16, 16, 64)         echo             256
+5 conv2d(conv2d)          (None, 16, 16, 64)         relu             18496
 __________________________________________________________________________________________
-max_pool (max_pool)       (None, 8, 8, 64)           echo             0
+6 conv2d(conv2d)          (None, 16, 16, 64)         relu             36928
 __________________________________________________________________________________________
-dropout (dropout)         (None, 8, 8, 64)           echo             0
+7 BatchNormalization(Batc (None, 16, 16, 64)         echo             256
 __________________________________________________________________________________________
-conv2d (conv2d)           (None, 8, 8, 128)          relu             73856
+8 max_pool(max_pool)      (None, 8, 8, 64)           echo             0
 __________________________________________________________________________________________
-BatchNormalization (Batch (None, 8, 8, 128)          echo             512
+9 dropout(dropout)        (None, 8, 8, 64)           echo             0
 __________________________________________________________________________________________
-max_pool (max_pool)       (None, 4, 4, 128)          echo             0
+10 conv2d(conv2d)         (None, 8, 8, 128)          relu             73856
 __________________________________________________________________________________________
-dropout (dropout)         (None, 4, 4, 128)          echo             0
+11 conv2d(conv2d)         (None, 8, 8, 128)          relu             147584
 __________________________________________________________________________________________
-flatten (flatten)         (None, 2048)               echo             0
+12 BatchNormalization(Bat (None, 8, 8, 128)          echo             512
 __________________________________________________________________________________________
-dense (dense)             (None, 512)                relu             1049088
+13 globalAveragePool(glob (None, 128)                echo             0
 __________________________________________________________________________________________
-BatchNormalization (Batch (None, 512)                echo             2048
+14 dropout(dropout)       (None, 128)                echo             0
 __________________________________________________________________________________________
-dropout (dropout)         (None, 512)                echo             0
-__________________________________________________________________________________________
-dense (dense)             (None, 10)                 softmax          5130
+15 dense(dense)           (None, 10)                 softmax          1290
 ==========================================================================================
-Total Params: 1,150,410
-Trainable Params: 1,148,938
-Non-trainable Params: 1,472
+Total Params: 289,194
+Trainable Params: 288,746
+Non-trainable Params: 448
 ```
 
 ### Compile model with optimizer, loss and Learning rate
@@ -200,14 +197,14 @@ Layer 1
 
 ## TO-DO
 
+* RNN and LSTM.
+* Auto Differentiation.
+* GPU support.
 * Fix loading and saving weights for training.
 * Start a server process for visualizing graphs while training.
-* Start a parallel process which is notified to use optimizer and update weights.
 * Comments.
-* L2 norm Regulization.
 * Lots of performance and memory improvement.
-* Complex architecture like ResNet ?
-* GPU support.
+* Complex architecture like Inception,ResNet.
 
 ## References
 

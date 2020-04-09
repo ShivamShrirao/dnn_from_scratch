@@ -19,7 +19,7 @@ seq_instance=None		# fix this. It's same for multiple models. Will be fixed by s
 COLT=coled_tracker()
 
 """ 
-Prolly make C code to pad faster.
+Prolly make parallel C code to pad faster.
 """
 
 class Layer:
@@ -40,7 +40,7 @@ class Layer:
 		lyr.output_layers.append(self)
 		return self
 
-class conv2d(Layer):						# TO-DO: explore __func__,  input layer=....
+class conv2d(Layer):
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		super().__init__()

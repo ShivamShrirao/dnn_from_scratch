@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from nnet import layers
-from nnet.functions import *
-from nnet.optimizers import *
+from nnet_gpu import layers
+from nnet_gpu.functions import *
+from nnet_gpu.optimizers import *
 import pickle
 from gc import collect
 import time
@@ -13,7 +13,7 @@ class Sequential:
 		layers.seq_instance=self
 		self.sequence=[]
 		self.learning_rate=0.001
-		self.dtype=np.float32
+		self.dtype=cp.float32
 
 	def add(self,obj):
 		if len(self.sequence)>0:
@@ -35,31 +35,31 @@ class Sequential:
 		return err
 
 	def predict(self,X_inp):
-		self.svd_inp=X_inp[:1].astype(self.dtype)
-		return self.forward(X_inp.astype(self.dtype),training=False)
+		self.svd_inp=X_inp[:1].astype(self.dtype,copy=False)
+		return self.forward(X_inp.astype(self.dtype,copy=False),training=False)
 
 	def train_on_batch(self,X_inp,labels):
-		X_inp=self.forward(X_inp.astype(self.dtype))
-		err=self.del_loss(X_inp,labels.astype(self.dtype))
+		X_inp=self.forward(X_inp.astype(self.dtype,copy=False))
+		err=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
 		self.backprop(err,self.lenseq_m1)
 		self.optimizer(self.sequence,self.learning_rate,self.beta)
 		return X_inp
 
 	def not_train_on_batch(self,X_inp,labels):
-		X_inp=self.forward(X_inp.astype(self.dtype))
-		err=self.del_loss(X_inp,labels.astype(self.dtype))
+		X_inp=self.forward(X_inp.astype(self.dtype,copy=False))
+		err=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
 
 	def fit(self,X_inp=None,labels=None,iterator=None,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,infobeta=0.2):
 		lnxinp=len(X_inp)
-		acc=0
+		acc=acch=0
 		loss=0
 		sam_time=0
 		for epch in range(epochs):
 			print("EPOCH:",epch+1,"/",epochs)
 			if iterator==None:
-				s=np.random.permutation(lnxinp)
+				s=cp.random.permutation(lnxinp)
 				X_inp=X_inp[s]
 				labels=labels[s]
 			start=time.time()
@@ -82,13 +82,14 @@ class Sequential:
 						cor=y_inp
 					nacc=(ans==cor).mean()
 					acc =infobeta*nacc + (1-infobeta)*acc
+					acch=acc.get()
 				sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
 				loss =infobeta*sample_loss + (1-infobeta)*loss
 				samtm=time.time()-smtst
 				sam_time=infobeta*samtm + (1-infobeta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*sam_time)
-				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss,acc),end="      _")
+				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss.get(),acch),end="      _")
 			end=time.time()
 			print("\nEpoch time: {:.3f}s".format(end-start))
 			if accuracy_metric:

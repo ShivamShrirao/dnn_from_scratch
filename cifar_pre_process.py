@@ -22,7 +22,6 @@ def normalize(x):
 
 #Class to handel the dataset
 class CifarPreProcess():
-	
 	def __init__(self,CIFAR_DIR = '../cifar-10-batches-py/'):
 		self.CIFAR_DIR=CIFAR_DIR
 		files = ['batches.meta','data_batch_1','data_batch_2','data_batch_3','data_batch_4','data_batch_5','test_batch']

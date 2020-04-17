@@ -89,6 +89,7 @@ class Sequential:
 				sam_time=infobeta*samtm + (1-infobeta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*sam_time)
+				# cp.cuda.Stream.null.synchronize()
 				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss.get(),acch),end="      _")
 			end=time.time()
 			print("\nEpoch time: {:.3f}s".format(end-start))

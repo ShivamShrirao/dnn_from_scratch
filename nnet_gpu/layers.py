@@ -61,10 +61,10 @@ class dense(Layer):
 			else:
 				self.biases = cp.asarray(biases)
 		self.kernels = self.weights
-		self.w_m=0
-		self.w_v=0
-		self.b_m=0
-		self.b_v=0
+		self.w_m=cp.zeros_like(self.weights)
+		self.w_v=cp.zeros_like(self.weights)
+		self.b_m=cp.zeros_like(self.biases)
+		self.b_v=cp.zeros_like(self.biases)
 		self.shape=(None,num_out)
 		self.param=self.input_shape*num_out + num_out
 		self.not_softmax_cross_entrp=True
@@ -110,10 +110,10 @@ class BatchNormalization(Layer):				# NOT IMPLEMENTED
 		self.gamma=self.weights
 		self.beta=self.biases
 		self.kernels = self.weights
-		self.w_m=0
-		self.w_v=0
-		self.b_m=0
-		self.b_v=0
+		self.w_m=cp.zeros_like(self.weights)
+		self.w_v=cp.zeros_like(self.weights)
+		self.b_m=cp.zeros_like(self.biases)
+		self.b_v=cp.zeros_like(self.biases)
 		self.epsilon=epsilon
 		self.momentum=momentum
 		self.moving_mean=None

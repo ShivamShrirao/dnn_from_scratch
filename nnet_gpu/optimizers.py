@@ -34,23 +34,25 @@ def adagrad(sequence,learning_rate=0.01,beta1=0.9,epsilon=1e-8):
 			obj.b_v+=(obj.d_c_b**2)
 			obj.biases-=learning_rate*(obj.d_c_b/cp.sqrt(obj.b_v+epsilon))
 
+adamkern=cp.ElementwiseKernel(
+	'T grad, float32 one_minus_beta1, float32 one_minus_beta2, float32 epsilon, float32 learning_rate',
+	'T param, T m, T v',
+	'''	m += one_minus_beta1 * (grad - m);
+		v += one_minus_beta2 * (grad * grad - v);
+		T mcap = m / one_minus_beta1;
+		T vcap = v / one_minus_beta2;
+		param -= learning_rate * (mcap / (sqrt(vcap) + epsilon));''',
+	'adamkern')
+
 def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):		# decay not functional rn
 	for obj in sequence:
 		if obj.param>0:
 			# Update weights
-			obj.w_m=beta1*obj.w_m + (1-beta1)*obj.d_c_w
-			obj.w_v=beta2*obj.w_v + (1-beta2)*(obj.d_c_w**2)
-			mcap=obj.w_m/(1-beta1)
-			vcap=obj.w_v/(1-beta2)
-			obj.d_c_w=mcap/(cp.sqrt(vcap)+epsilon)
-			obj.weights-=learning_rate*obj.d_c_w
+			adamkern(obj.d_c_w, 1-beta1, 1-beta2, epsilon, learning_rate, 
+				obj.weights, obj.w_m, obj.w_v)
 			# Update biases
-			obj.b_m=beta1*obj.b_m + (1-beta1)*obj.d_c_b
-			obj.b_v=beta2*obj.b_v + (1-beta2)*(obj.d_c_b**2)
-			mcap=obj.b_m/(1-beta1)
-			vcap=obj.b_v/(1-beta2)
-			obj.d_c_b=mcap/(cp.sqrt(vcap)+epsilon)
-			obj.biases-=learning_rate*obj.d_c_b
+			adamkern(obj.d_c_b, 1-beta1, 1-beta2, epsilon, learning_rate, 
+				obj.biases, obj.b_m, obj.b_v)
 
 def adamax(sequence,learning_rate=0.002,beta1=0.9,beta2=0.999,epsilon=1e-8):
 	for obj in sequence:

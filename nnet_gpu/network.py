@@ -53,8 +53,8 @@ class Sequential:
 
 	def fit(self,X_inp=None,labels=None,iterator=None,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,infobeta=0.2):
 		lnxinp=len(X_inp)
-		acc=acch=0
-		loss=0
+		acc=0
+		loss=sample_loss=0
 		sam_time=0
 		for epch in range(epochs):
 			print("EPOCH:",epch+1,"/",epochs)
@@ -80,17 +80,16 @@ class Sequential:
 					else:
 						ans=logits
 						cor=y_inp
-					nacc=(ans==cor).mean()
+					nacc=(ans==cor).mean().get()
 					acc =infobeta*nacc + (1-infobeta)*acc
-					acch=acc.get()
-				sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
+				sample_loss=self.loss(logits=logits,labels=y_inp).mean().get()/10
 				loss =infobeta*sample_loss + (1-infobeta)*loss
 				samtm=time.time()-smtst
 				sam_time=infobeta*samtm + (1-infobeta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*sam_time)
 				# cp.cuda.Stream.null.synchronize()
-				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss.get(),acch),end="      _")
+				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss,acc),end="      _")
 			end=time.time()
 			print("\nEpoch time: {:.3f}s".format(end-start))
 			if accuracy_metric:
@@ -117,8 +116,8 @@ class Sequential:
 			else:
 				ans=logits
 				cor=y_inp
-			vacc+=(ans==cor).sum()
-			sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
+			vacc+=(ans==cor).sum().get()
+			sample_loss=self.loss(logits=logits,labels=y_inp).mean().get()/10
 			vloss=infobeta*sample_loss + (1-infobeta)*vloss
 		print("\rValidation Accuracy:",str(vacc/lnvx)[:5],"- val_loss:",str(vloss)[:6])
 

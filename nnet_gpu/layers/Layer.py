@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from .functions import *
+from ..functions import *
 import numpy as np
 import cupy as cp
 

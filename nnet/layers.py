@@ -219,7 +219,6 @@ class conv2dtranspose(conv2d):
 			if padding is None:
 				padding=kernel_size-1
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
-		
 
 class max_pool(Layer):
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):

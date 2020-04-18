@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from nnet_gpu import layers
-from nnet_gpu.functions import *
-from nnet_gpu.optimizers import *
+from . import layers
+from .functions import *
+from .optimizers import *
 import pickle
 from gc import collect
 import time

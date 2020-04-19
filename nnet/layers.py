@@ -41,7 +41,7 @@ class Layer:
 		return self
 
 class conv2d(Layer):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=None,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels],kernels(channels,ksz,ksz,num_kernels),biases[1,num_ker],stride[row,col]
 		super().__init__()
 		if input_shape is None:
@@ -71,8 +71,6 @@ class conv2d(Layer):
 		else:
 			self.kernel_size=kernels.shape[1]
 			self.num_kernels=kernels.shape[3]
-		if biases != None:
-			self.biases=biases
 		self.kern = self.kernels.reshape(-1,self.num_kernels)
 		self.weights = self.kernels
 		self.padding=padding

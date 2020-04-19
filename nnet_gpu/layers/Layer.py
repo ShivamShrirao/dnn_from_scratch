@@ -12,6 +12,7 @@ class Layer:
 		self.activation=echo
 		self.input_layer=None
 		self.output_layers=[]
+		self.bias_is_not_0=True
 
 	def __str__(self):
 		return self.name+super().__str__()

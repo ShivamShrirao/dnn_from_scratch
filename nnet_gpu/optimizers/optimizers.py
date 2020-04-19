@@ -51,7 +51,8 @@ def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0
 			adamkern(obj.d_c_w, 1-beta1, 1-beta2, epsilon, learning_rate, 
 				obj.weights, obj.w_m, obj.w_v)
 			# Update biases
-			adamkern(obj.d_c_b, 1-beta1, 1-beta2, epsilon, learning_rate, 
+			if obj.bias_is_not_0:
+				adamkern(obj.d_c_b, 1-beta1, 1-beta2, epsilon, learning_rate, 
 				obj.biases, obj.b_m, obj.b_v)
 
 def adamax(sequence,learning_rate=0.002,beta1=0.9,beta2=0.999,epsilon=1e-8):

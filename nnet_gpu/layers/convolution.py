@@ -60,7 +60,7 @@ def get_conv_outsize(sz,ksz,stride,pad,dilation=1):
 	return (sz-ksz+2*pad-(ksz-1)*(dilation-1))//stride+1
 
 class conv2d(Layer):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),dlate=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
 		super().__init__()
 		if input_shape is None:
@@ -99,9 +99,6 @@ class conv2d(Layer):
 		self.kern = self.kernels.reshape(-1,self.num_kernels)
 		self.weights = self.kernels
 		self.dilation=dilation
-		# self.dlate=dlate
-		# self.erow=self.row+(self.row-1)*(self.dlate[0]-1)
-		# self.ecol=self.col+(self.col-1)*(self.dlate[1]-1)
 		if padding == 'same':							#take care of padding in backprop too
 			self.padding=((self.kernel_size[0]-1)//2,(self.kernel_size[1]-1)//2)		#currently don't give 'even' kernel_size
 		else:
@@ -129,34 +126,26 @@ class conv2d(Layer):
 	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
 		if (self.stride[0]+self.stride[1])>2:
 			padk=self.padding
-			padi=(self.kernel_size[0]-1,self.kernel_size[1]-1)
 			distride=(1,1)
 			off_transpose_ker=self.off_transpose
-			off_transpose_inp=0
-		elif (self.dlate[0]+self.dlate[1])>2:
-			padk=self.padding
-			padi=(self.kernel_size[0]-1,self.kernel_size[1]-1)
-			distride=self.dlate
-			off_transpose_ker=0
-			off_transpose_inp=(self.out_row+2*padi[0])*padi[0]+padi[0]
 		else:
-			padk=padi=((self.kernel_size[0]-1)//2,(self.kernel_size[1]-1)//2)
+			padk=((self.kernel_size[0]-1)//2,(self.kernel_size[1]-1)//2)
 			distride=self.stride
-			off_transpose_ker=off_transpose_inp=0
+			off_transpose_ker=0
 		grads=cp.empty((self.batches,self.out_row,self.out_col,self.num_kernels),dtype=self.dtype)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,dilation=self.stride,dlate=self.dlate,padding=padk,backp=False,off_transpose=off_transpose_ker,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
 		self.d_ker.is_not_dker=False
-		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=distride,dlate=self.stride,padding=padi,off_transpose=off_transpose_inp,backp=False,out_row=self.row,out_col=self.col)
+		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)
 
 	def forward(self,inp,training=True):
 		self.inp=cp.ascontiguousarray(inp.transpose(0,3,1,2))
 		#inp[batches,channels,row,col]
 		self.batches,self.channels,self.row,self.col=self.inp.shape
 		col = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col), dtype=self.dtype)
-		col = im2col(inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
-					self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
-					self.dilation[0], self.dilation[1],
-					col)
+		im2col(inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
+				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
+				self.dilation[0], self.dilation[1],
+				col)
 		self.z_out = cp.tensordot(col, self.kernels, ((1, 2, 3), (0, 1, 2)))
 		# del col
 		if self.bias_is_not_0:
@@ -184,28 +173,22 @@ class conv2d(Layer):
 		return d_inputs
 
 class conv2dtranspose(conv2d):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),dlate=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
-		if input_shape is None:
-			input_shape=seq_instance.get_inp_shape()
-		out_row=stride[0]*input_shape[0]
-		out_col=stride[1]*input_shape[1]
-		if (stride[0]+stride[1])>2:
-			dlate=stride
-			stride=[1,1]
-			if padding == 'same':
-				padding=(kernel_size[0]-1,kernel_size[1]-1)
-			else:
-				padding=(0,0)
-		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
-
-class conv2dtranspose(conv2d):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),dlate=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
-		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
+		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
 
 	def forward(self,inp,training=True):
-		self.inp=cp.ascontiguousarray(inp.transpose(0,3,1,2))
+		self.inp=inp.transpose(0,3,1,2)
 		#inp[batches,channels,row,col]
-		col=cp.tensordot(self.kernels,inp,(3,1))
+		col=cp.tensordot(self.kernels,self.inp,(3,1))
+		col=cp.rollaxis(col, 3)
+		col=cp.ascontiguousarray(col)
+		self.z_out=cp.empty((self.batches, self.channels, self.out_row, self.out_col), dtype=gcol.dtype)
+		col2im(col.reduced_view(), self.out_row, self.out_col, self.row, self.col,
+				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
+				self.dilation[0], self.dilation[1],
+				self.z_out)
+		self.a_out=self.activation(self.z_out)
+		return self.a_out.transpose(0,2,3,1)			# a_out[self.batches,self.out_row,self.out_col,self.num_kernels]
 
 	def backprop(self,grads,layer=1):
 		pass

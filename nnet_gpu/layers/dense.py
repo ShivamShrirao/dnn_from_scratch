@@ -52,12 +52,11 @@ class dense(Layer):
 	def backprop(self,grads,layer=1):
 		if self.notEcho and self.not_softmax_cross_entrp:			# make it better in future
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
-		d_c_b=grads
-		self.d_c_w=self.inp.T.dot(d_c_b)#/self.inp.shape[0]
+		self.d_c_w=self.inp.T.dot(grads)#/self.inp.shape[0]
 		if layer:
-			d_c_a=d_c_b.dot(self.weights.T)
+			d_c_a=grads.dot(self.weights.T)
 		else:
 			d_c_a=0
-		self.d_c_b=d_c_b.sum(axis=0,keepdims=True)
+		self.d_c_b=grads.sum(axis=0,keepdims=True)
 		# self.d_c_b=d_c_b.mean(axis=0,keepdims=True)
 		return d_c_a

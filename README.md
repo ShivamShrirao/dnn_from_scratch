@@ -179,6 +179,7 @@ Accuracy						 |				Loss
 
 ## Localization Heatmaps
 What the CNN sees
+![Heatmap](/pics/localized_heatmap4.png?raw=true)
 ![Heatmap](/pics/localized_heatmap2.png?raw=true)
 
 ## Some predictions.

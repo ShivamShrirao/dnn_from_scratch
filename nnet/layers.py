@@ -206,7 +206,7 @@ class conv2d(Layer):
 		return d_inputs
 
 class conv2dtranspose(conv2d):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[2,2],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=[1,1],dilation=[1,1],dlate=[1,1],padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
 		if input_shape is None:
 			input_shape=seq_instance.get_inp_shape()
 		out_row=stride[0]*input_shape[0]
@@ -533,6 +533,7 @@ class BatchNormalization(Layer):					#Have to add references to each brah
 			self.batches=batches
 		self.d_c_b=grads.sum(axis=0) 				#(row,col,channels)		# biases is beta
 		self.d_c_w=(self.xnorm*grads).sum(axis=0)	#(row,col,channels)		# gamma is weights
+		# d_inp=self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		return d_inp
 

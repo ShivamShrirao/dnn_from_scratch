@@ -144,10 +144,25 @@ class conv2d(Layer):
 		return self.a_out				# a_out[self.batches,self.out_row,self.out_col,self.num_kernels]
 
 	def backprop(self,grads,layer=1):								#strides[batch,row,col,depth]
-		#grads[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,kernel_size[0],kernel_size[1],num_kernels),biases[1,num_kernels],stride[row,col]
+		"""
+		grads[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,ksz,ksz,num_kernels),biases[1,num_kernels]
+		1.) For kernel gradient (self.d_ker):
+				Convolve the gradients as kernel over saved input with stride 1 and dilate the gradient with current stride
+				value and same current padding.
+				The channels are treated as batches and batches as channel so it gives the correct kernel gradient shape.
+
+		2.) For input gradient (self.d_inp):
+				Transposed convolution over gradients with self.kernels as kernel. Should give original input shape back.
+				All parameters stride,padding,dilation are same as current.
+
+		3.) For biases gradient :
+				It's just same as gradient. Just reshape and sum/mean it.
+
+		TODO: Compare difference of sum and mean for bias.
+		"""
 		if self.activation != echo:
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
-		self.d_ker.kernels=grads
+		self.d_ker.kernels=grads 						# set gradients as kernel
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
 		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]

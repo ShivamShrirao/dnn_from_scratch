@@ -10,7 +10,7 @@ import time
 
 class Sequential:
 	def __init__(self):
-		layers.seq_instance=self
+		layers.seqinst.seq_instance=self
 		self.sequence=[]
 		self.learning_rate=0.001
 		self.dtype=cp.float32
@@ -125,7 +125,6 @@ class Sequential:
 		X_inp=self.svd_inp
 		err=self.forward(X_inp,False)
 		self.backprop(err,self.lenseq_m1)
-		layers.COLT.free()					# MAKE ONE TO FREE UNUSED objs IN COLT
 		collect()
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):

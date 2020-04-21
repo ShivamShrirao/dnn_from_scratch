@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from .Layer import *
+from .base_layer import *
+from . import seqinst
 
 class BatchNormalization(Layer):
 	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
@@ -10,7 +11,7 @@ class BatchNormalization(Layer):
 			self.name=self.__class__.__name__
 		else:
 			self.name=name
-		input_shape=seq_instance.get_inp_shape()
+		input_shape=seqinst.seq_instance.get_inp_shape()
 		self.shape=(None,*input_shape)
 		self.batches=1
 		self.inp_shape=(self.batches,*input_shape)

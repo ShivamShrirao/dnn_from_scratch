@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-from .Layer import *
+from .base_layer import *
 from .convolution import *
 from .dense import *
 from .BatchNormalization import *
-import cupyx
+from .shaping import *
+from .pooling import *
 
-seq_instance = None
+import cupyx

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from .Layer import *
+from .base_layer import *
+from . import seqinst
 
 im2col = cp.ElementwiseKernel(
 	'raw T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
@@ -57,7 +58,7 @@ def init_kernel_bias(num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,
 		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)
 
 class _emptyHelper:
-	def __init__(shape):
+	def __init__(self,shape):
 		self.shape=shape
 
 class conv2d(Layer):
@@ -65,7 +66,7 @@ class conv2d(Layer):
 		#input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
 		super().__init__()
 		if input_shape is None:
-			input_shape=seq_instance.get_inp_shape()
+			input_shape=seqinst.seq_instance.get_inp_shape()
 		if name is None:
 			self.name=self.__class__.__name__
 		else:
@@ -78,6 +79,7 @@ class conv2d(Layer):
 		self.row,self.col,self.channels=input_shape
 		self.batches=batches
 		self.kernels=kernels
+		self.biases=biases
 		if self.kernels is None:
 			if np.isscalar(kernel_size):
 				self.kernel_size=(kernel_size,kernel_size)
@@ -88,16 +90,11 @@ class conv2d(Layer):
 		else:
 			self.kernel_size=kernels.shape[1:3]
 			self.num_kernels=kernels.shape[3]
-		self.w_m=cp.zeros_like(self.weights)
-		self.w_v=cp.zeros_like(self.weights)
+		self.weights = self.kernels
 		self.bias_is_not_0=True
 		if cp.isscalar(self.biases):				# DO BETTER FIX
 			if self.biases==0:
 				self.bias_is_not_0=False
-		if self.bias_is_not_0:
-			self.b_m=cp.zeros_like(self.biases)
-			self.b_v=cp.zeros_like(self.biases)
-		self.weights = self.kernels
 		self.dilation= dilation
 		self.padding = padding
 		if padding == None:
@@ -114,6 +111,11 @@ class conv2d(Layer):
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		self.is_not_dker=True
 		if backp:
+			self.w_m=cp.zeros_like(self.weights)
+			self.w_v=cp.zeros_like(self.weights)
+			if self.bias_is_not_0:
+				self.b_m=cp.zeros_like(self.biases)
+				self.b_v=cp.zeros_like(self.biases)
 			self.init_back()
 
 	def init_back(self):
@@ -147,8 +149,8 @@ class conv2d(Layer):
 		"""
 		grads[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,ksz,ksz,num_kernels),biases[1,num_kernels]
 		1.) For kernel gradient (self.d_ker):
-				Convolve the gradients as kernel over saved input with stride 1 and dilate the gradient with current stride
-				value and same current padding.
+				Convolve the gradients as kernel over saved input with stride 1 and dilate the gradient with
+				current stride value and same current padding.
 				The channels are treated as batches and batches as channel so it gives the correct kernel gradient shape.
 
 		2.) For input gradient (self.d_inp):
@@ -168,10 +170,11 @@ class conv2d(Layer):
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if layer:
 			d_inputs=self.d_inp.forward(grads)
+			assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:
-			self.d_c_b=self.grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
+			self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
 			# self.d_c_b=self.grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs
 
@@ -186,16 +189,17 @@ class conv2dtranspose(conv2d):
 	def forward(self,inp,training=True):
 		self.inp=inp.transpose(0,3,1,2)
 		#inp[batches,channels,row,col]
+		self.batches,self.channels,self.row,self.col=self.inp.shape
 		col=cp.tensordot(self.kernels,self.inp,(3,1))
 		col=cp.moveaxis(col,3,0)				# CAN WE REMOVE THIS SOMEHOW ??
 		col=cp.ascontiguousarray(col)
-		self.z_out=cp.empty((self.batches, self.channels, self.out_row, self.out_col), dtype=gcol.dtype)
+		self.z_out=cp.empty((self.batches, self.kernels.shape[0], self.out_row, self.out_col), dtype=col.dtype)
 		col2im(col.reduced_view(), self.out_row, self.out_col, self.row, self.col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
 				self.dilation[0], self.dilation[1],
 				self.z_out)
 		self.a_out=self.activation(self.z_out)
-		return self.a_out.transpose(0,2,3,1)			# a_out[self.batches,self.out_row,self.out_col,self.num_kernels]
+		return self.a_out.transpose(0,2,3,1)			# a_out[batches,out_row,out_col,num_kernels]
 
 	def backprop(self,grads,layer=1):
 		pass

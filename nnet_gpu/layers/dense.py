@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from .Layer import *
+from .base_layer import *
+from . import seqinst
 
 class dense(Layer):
 	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):
@@ -11,7 +12,7 @@ class dense(Layer):
 		else:
 			self.name=name
 		if input_shape is None:
-			self.input_shape=seq_instance.get_inp_shape()[0]
+			self.input_shape=seqinst.seq_instance.get_inp_shape()[0]
 		else:
 			self.input_shape=input_shape
 		self.activation=activation

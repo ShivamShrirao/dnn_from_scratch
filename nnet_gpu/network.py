@@ -35,7 +35,6 @@ class Sequential:
 		return err
 
 	def predict(self,X_inp):
-		self.svd_inp=X_inp[:1].astype(self.dtype,copy=False)
 		return self.forward(X_inp.astype(self.dtype,copy=False),training=False)
 
 	def train_on_batch(self,X_inp,labels):
@@ -71,7 +70,7 @@ class Sequential:
 				else:
 					inp=X_inp[idx:idx+batch_size]
 					y_inp=labels[idx:idx+batch_size]
-				idx+=inp.shape[0]
+				idx+=batch_size#inp.shape[0]
 				logits=self.train_on_batch(inp,y_inp)
 				if accuracy_metric:
 					if self.loss==cross_entropy_with_logits:
@@ -80,18 +79,17 @@ class Sequential:
 					else:
 						ans=logits
 						cor=y_inp
-					nacc=(ans==cor).mean().get()
+					nacc=(ans==cor).mean()
 					acc =infobeta*nacc + (1-infobeta)*acc
-				sample_loss=self.loss(logits=logits,labels=y_inp).mean().get()/10
+				sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
 				loss =infobeta*sample_loss + (1-infobeta)*loss
 				samtm=time.time()-smtst
 				sam_time=infobeta*samtm + (1-infobeta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*sam_time)
-				# cp.cuda.Stream.null.synchronize()
-				print("\rProgress: {} / {}  - {}s - {:.2}s/sample - loss: {:.4f} - accuracy: {:.4f}".format(str(idx).rjust(6),lnxinp,eta,sam_time,sample_loss,acc),end="      _")
+				print(f"\rProgress: {str(idx):>6} / {lnxinp}  - {eta}s - {sam_time:.2f}s/sample - loss: {sample_loss.get():.4f} - accuracy: {acc.get():.4f}",end="      _")
 			end=time.time()
-			print("\nEpoch time: {:.3f}s".format(end-start))
+			print(f"\nEpoch time: {end-start:.3f}s")
 			if accuracy_metric:
 				self.validate(validation_data,batch_size,infobeta)
 
@@ -105,27 +103,24 @@ class Sequential:
 		vacc=0
 		vloss=0
 		print("Calculating Validation Accuracy....",end="")
-		while vidx<=lnvx:
+		start=time.time()
+		while vidx<lnvx:
 			inp=VX[vidx:vidx+batch_size]
 			y_inp=VY[vidx:vidx+batch_size]
-			vidx+=batch_size
-			logits=self.predict(inp)
+			vidx+=batch_size#inp.shape[0]
+			logits=self.train_on_batch(inp,y_inp)
+			# logits=self.predict(inp)
 			if self.loss==cross_entropy_with_logits:
 				ans=logits.argmax(axis=1)
 				cor=y_inp.argmax(axis=1)
 			else:
 				ans=logits
 				cor=y_inp
-			vacc+=(ans==cor).sum().get()
-			sample_loss=self.loss(logits=logits,labels=y_inp).mean().get()/10
+			vacc+=(ans==cor).sum()
+			sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
 			vloss=infobeta*sample_loss + (1-infobeta)*vloss
-		print("\rValidation Accuracy:",str(vacc/lnvx)[:5],"- val_loss:",str(vloss)[:6])
-
-	def free(self):			#just to free memory of large batch after predict
-		X_inp=self.svd_inp
-		err=self.forward(X_inp,False)
-		self.backprop(err,self.lenseq_m1)
-		collect()
+		end=time.time()
+		print(f"\rValidation Accuracy: {(vacc/lnvx).get():.4f} - val_loss: {vloss.get():.4f} - Time: {end-start:.3f}s")
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):
 		self.optimizer=optimizer

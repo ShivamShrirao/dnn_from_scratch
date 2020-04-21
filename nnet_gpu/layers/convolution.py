@@ -133,7 +133,7 @@ class conv2d(Layer):
 		#inp[batches,channels,row,col]
 		self.batches,self.channels,self.row,self.col=self.inp.shape
 		col = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col), dtype=self.dtype)
-		im2col(inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
+		im2col(self.inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
 				self.dilation[0], self.dilation[1],
 				col)
@@ -166,7 +166,7 @@ class conv2d(Layer):
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=grads 						# set gradients as kernel
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
-		# self.d_c_w/=self.batches		#take mean change over batches
+		self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if layer:
 			d_inputs=self.d_inp.forward(grads)
@@ -174,8 +174,8 @@ class conv2d(Layer):
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:
-			self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
-			# self.d_c_b=self.grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
+			# self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
+			self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs
 
 class conv2dtranspose(conv2d):
@@ -198,6 +198,8 @@ class conv2dtranspose(conv2d):
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
 				self.dilation[0], self.dilation[1],
 				self.z_out)
+		if self.bias_is_not_0:
+			self.z_out+=self.biases
 		self.a_out=self.activation(self.z_out)
 		return self.a_out.transpose(0,2,3,1)			# a_out[batches,out_row,out_col,num_kernels]
 

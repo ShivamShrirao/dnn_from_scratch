@@ -118,7 +118,7 @@ class conv2d(Layer):
 
 	def init_back(self):
 		grads = _emptyHelper((self.batches,self.out_row,self.out_col,self.num_kernels))
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,stride=(1,1),dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
 		self.d_ker.is_not_dker=False
 		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)
 
@@ -172,7 +172,7 @@ class conv2dtranspose(conv2d):
 		self.inp=inp.transpose(0,3,1,2)
 		#inp[batches,channels,row,col]
 		col=cp.tensordot(self.kernels,self.inp,(3,1))
-		col=cp.rollaxis(col, 3)
+		col=cp.moveaxis(col,3,0)				# CAN WE REMOVE THIS SOMEHOW ??
 		col=cp.ascontiguousarray(col)
 		self.z_out=cp.empty((self.batches, self.channels, self.out_row, self.out_col), dtype=gcol.dtype)
 		col2im(col.reduced_view(), self.out_row, self.out_col, self.row, self.col,

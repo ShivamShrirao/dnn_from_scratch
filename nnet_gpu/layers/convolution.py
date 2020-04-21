@@ -56,11 +56,12 @@ def init_kernel_bias(num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,
 		bias = std*cp.random.randn(1,num_kernels) + mean
 		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)
 
-def get_conv_outsize(sz,ksz,stride,pad,dilation=1):
-	return (sz-ksz+2*pad-(ksz-1)*(dilation-1))//stride+1
+class _emptyHelper:
+	def __init__(shape):
+		self.shape=shape
 
 class conv2d(Layer):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None,off_transpose=0):		#padding=(ksz-1)/2 for same shape in stride 1
 		#input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
 		super().__init__()
 		if input_shape is None:
@@ -90,52 +91,40 @@ class conv2d(Layer):
 		self.w_m=cp.zeros_like(self.weights)
 		self.w_v=cp.zeros_like(self.weights)
 		self.bias_is_not_0=True
-		if cp.isscalar(self.biases):
+		if cp.isscalar(self.biases):				# DO BETTER FIX
 			if self.biases==0:
 				self.bias_is_not_0=False
 		if self.bias_is_not_0:
 			self.b_m=cp.zeros_like(self.biases)
 			self.b_v=cp.zeros_like(self.biases)
-		self.kern = self.kernels.reshape(-1,self.num_kernels)
 		self.weights = self.kernels
-		self.dilation=dilation
-		if padding == 'same':							#take care of padding in backprop too
+		self.dilation= dilation
+		self.padding = padding
+		if padding == None:
 			self.padding=((self.kernel_size[0]-1)//2,(self.kernel_size[1]-1)//2)		#currently don't give 'even' kernel_size
-		else:
-			self.padding=(0,0)
 		if out_row is None:
-			self.out_row=get_conv_outsize(self.row,self.kernel_size[0],self.stride[0],self.padding[0],self.dilation[0])
+			self.out_row=self.cal_outsize(self.row,self.kernel_size[0],self.stride[0],self.padding[0],self.dilation[0])
 		else:
 			self.out_row=out_row
 		if out_col is None:
-			self.out_col=get_conv_outsize(self.row,self.kernel_size[1],self.stride[1],self.padding[1],self.dilation[1])
+			self.out_col=self.cal_outsize(self.row,self.kernel_size[1],self.stride[1],self.padding[1],self.dilation[1])
 		else:
 			self.out_col=out_col
 		self.param=(self.kernel_size[0]*self.kernel_size[1]*self.channels+1)*self.num_kernels
-		self.off_transpose=off_transpose
-		if (self.stride[0]+self.stride[1])>2:
-			if backp:
-				if self.off_transpose==0:
-					cuut=self.padding[0]-self.padding[0]//self.stride[0]
-					self.off_transpose=(self.row+2*self.padding[0])*cuut+cuut
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		self.is_not_dker=True
 		if backp:
 			self.init_back()
 
-	def init_back(self):				# flipped kernel has same reference as original one so it will be updated automatically with original kernel
-		if (self.stride[0]+self.stride[1])>2:
-			padk=self.padding
-			distride=(1,1)
-			off_transpose_ker=self.off_transpose
-		else:
-			padk=((self.kernel_size[0]-1)//2,(self.kernel_size[1]-1)//2)
-			distride=self.stride
-			off_transpose_ker=0
-		grads=cp.empty((self.batches,self.out_row,self.out_col,self.num_kernels),dtype=self.dtype)
-		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,dilation=self.stride,padding=padk,backp=False,out_row=self.kernel_size,out_col=self.kernel_size,batches=self.channels)
+	def init_back(self):
+		grads = _emptyHelper((self.batches,self.out_row,self.out_col,self.num_kernels))
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
 		self.d_ker.is_not_dker=False
 		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)
+
+	def cal_outsize(self,sz,ksz,stride,pad,dilation=1):
+		dksz = (ksz-1)*dilation + 1		# dilated kernel
+		return (sz + 2*pad - dksz)//stride + 1
 
 	def forward(self,inp,training=True):
 		self.inp=cp.ascontiguousarray(inp.transpose(0,3,1,2))
@@ -159,22 +148,25 @@ class conv2d(Layer):
 		if self.activation != echo:
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=grads
-		self.d_ker.padded=cp.ascontiguousarray(self.padded.transpose(1,0,2,3))
-		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
+		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
 		# self.d_c_w/=self.batches		#take mean change over batches
-		# Backprop for inp.		grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
+		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if layer:
 			d_inputs=self.d_inp.forward(grads)
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:
-			self.d_c_b=self.d_ker.kern.sum(axis=0,keepdims=True)
-		# self.d_c_b=self.d_ker.kern.mean(axis=0,keepdims=True)
+			self.d_c_b=self.grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
+			# self.d_c_b=self.grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs
 
 class conv2dtranspose(conv2d):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding='same',batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
+	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
+
+	def cal_outsize(self,sz,ksz,stride,pad,dilation=1):
+		# dksz = (ksz-1)*dilation + 1		# dilated kernel
+		return sz*stride
 
 	def forward(self,inp,training=True):
 		self.inp=inp.transpose(0,3,1,2)

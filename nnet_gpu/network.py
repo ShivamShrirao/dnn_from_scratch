@@ -71,7 +71,7 @@ class Sequential:
 				else:
 					inp=X_inp[idx:idx+batch_size]
 					y_inp=labels[idx:idx+batch_size]
-				idx+=batch_size
+				idx+=inp.shape[0]
 				logits=self.train_on_batch(inp,y_inp)
 				if accuracy_metric:
 					if self.loss==cross_entropy_with_logits:

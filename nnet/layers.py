@@ -193,7 +193,7 @@ class conv2d(Layer):
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=grads
 		self.d_ker.padded=np.ascontiguousarray(self.padded.transpose(1,0,2,3))
-		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))
+		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
 		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.		grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size,kernel_size,channels]
 		if layer:
@@ -496,28 +496,28 @@ class BatchNormalization(Layer):					#Have to add references to each brah
 		#inp[batches,row,col,channels]
 		if training:
 			self.inp_shape=inp.shape
-			self.mean=inp.mean(axis=0)					#(row,col,channels)
-			self.xmu=inp-self.mean 						#(batches,row,col,channels)
-			self.var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
-			self.ivar=1/(self.var+self.epsilon)			#(row,col,channels)
+			mean=inp.mean(axis=0)					#(row,col,channels)
+			self.xmu=inp-mean 						#(batches,row,col,channels)
+			var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
+			self.ivar=1/(var+self.epsilon)			#(row,col,channels)
 			self.istd=np.sqrt(self.ivar)				#(row,col,channels)
 			self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
 			if self.moving_mean is None:
-				self.moving_mean=self.mean
-				self.moving_var=self.var
+				self.moving_mean=mean
+				self.moving_var=var
 			else:
-				self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*self.mean
-				self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*self.var
+				self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
+				self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*var
 		else:
 			if self.moving_mean is None:
 				self.inp_shape=inp.shape
-				self.mean=inp.mean(axis=0)					#(row,col,channels)
-				self.xmu=inp-self.mean 						#(batches,row,col,channels)
-				self.var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
-				self.ivar=1/(self.var+self.epsilon)			#(row,col,channels)
+				mean=inp.mean(axis=0)					#(row,col,channels)
+				self.xmu=inp-mean 						#(batches,row,col,channels)
+				var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
+				self.ivar=1/(var+self.epsilon)			#(row,col,channels)
 				self.istd=np.sqrt(self.ivar)				#(row,col,channels)
-				self.moving_mean=self.mean
-				self.moving_var=self.var
+				self.moving_mean=mean
+				self.moving_var=var
 				self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
 			else:
 				self.inp_shape=inp.shape

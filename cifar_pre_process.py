@@ -81,6 +81,7 @@ class CifarPreProcess():
 		self.test_labels = self.test_labels[idxs]
 
 	def data_augment(self,batch_size=64):
+		self.batch_size=batch_size
 		self.datagen = ImageDataGenerator(
 			rotation_range=15,
 			width_shift_range=0.1,
@@ -91,6 +92,19 @@ class CifarPreProcess():
 		self.itr_train = self.datagen.flow(self.training_images, self.training_labels, batch_size=batch_size)
 		collect()
 		return self.itr_train
+
+	def make_dataset_from_iterator(self):
+		if self.itr_train is None:
+			return None
+		steps=self.training_images.shape[0]//self.batch_size
+		INP=np.empty((steps,self.batch_size,*self.training_images.shape[1:]),dtype=np.float32)
+		LBL=np.empty((steps,self.batch_size,*self.training_labels.shape[1:]),dtype=np.float32)
+		for idx in range(steps):
+			try:
+				INP[idx],LBL[idx]=self.itr_train.next()
+			except ValueError:
+				INP[idx],LBL[idx]=self.itr_train.next()
+		return INP.reshape(-1,*self.training_images.shape[1:]),LBL.reshape(-1,*self.training_labels.shape[1:])
 
 	def batch_gen(self,size,ck=0):
 		if not ck:

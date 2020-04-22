@@ -138,7 +138,6 @@ class Sequential:
 		self.lenseq_m1=len(self.sequence)-1
 
 	def save_weights(self,path):	# has problems if u wanna train the network further. Need to fix that.
-		print("[!] Load and save is bugged. You can use it for saving,loading and prediction but training further from loaded weights isn't working.")
 		sv_me=[]					# OK for just validation and prediction.
 		for obj in self.sequence:	# FIX: Prolly d_ker is seeing different kernel
 			if obj.param>0:
@@ -150,7 +149,6 @@ class Sequential:
 			pickle.dump(sv_me,f)
 
 	def load_weights(self,path):
-		print("[!] Load and save is bugged. You can use it for saving,loading and prediction but training further from loaded weights isn't working.")
 		with open(path,'rb') as f:
 			sv_me=pickle.load(f)
 		idx=0
@@ -160,8 +158,8 @@ class Sequential:
 					obj.weights,obj.biases,obj.moving_mean,obj.moving_var=sv_me[idx]
 				else:
 					obj.weights,obj.biases=sv_me[idx]
-					# obj.weights,obj.biases,obj.w_m,obj.w_v,obj.b_m,obj.b_v=sv_me[idx]
 					if obj.__class__==layers.conv2d:
+						obj.d_inp.kernels=obj.weights
 						obj.init_back()
 				obj.kernels=obj.weights
 				idx+=1

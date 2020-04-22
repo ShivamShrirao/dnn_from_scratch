@@ -7,5 +7,6 @@ from .dense import *
 from .dropout import *
 from .pooling import *
 from .shaping import *
+from .upsampling import *
 
 import cupyx

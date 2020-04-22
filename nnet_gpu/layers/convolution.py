@@ -129,7 +129,8 @@ class conv2d(Layer):
 		return (sz + 2*pad - dksz)//stride + 1
 
 	def forward(self,inp,training=True):
-		self.inp=cp.ascontiguousarray(inp.transpose(0,3,1,2))
+		inp=cp.ascontiguousarray(inp.transpose(0,3,1,2))
+		self.inp=inp
 		#inp[batches,channels,row,col]
 		self.batches,self.channels,self.row,self.col=self.inp.shape
 		col = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col), dtype=self.dtype)
@@ -166,16 +167,16 @@ class conv2d(Layer):
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=grads 						# set gradients as kernel
 		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
-		self.d_c_w/=self.batches		#take mean change over batches
+		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if layer:
-			d_inputs=self.d_inp.forward(grads)
+			d_inputs=cp.ascontiguousarray(self.d_inp.forward(grads))
 			assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:
-			# self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
-			self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
+			self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
+			# self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs
 
 class conv2dtranspose(conv2d):

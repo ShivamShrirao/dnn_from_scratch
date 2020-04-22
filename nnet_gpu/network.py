@@ -70,7 +70,7 @@ class Sequential:
 				else:
 					inp=X_inp[idx:idx+batch_size]
 					y_inp=labels[idx:idx+batch_size]
-				idx+=batch_size#inp.shape[0]
+				idx+=inp.shape[0]
 				logits=self.train_on_batch(inp,y_inp)
 				if accuracy_metric:
 					if self.loss==cross_entropy_with_logits:
@@ -79,17 +79,17 @@ class Sequential:
 					else:
 						ans=logits
 						cor=y_inp
-					nacc=(ans==cor).mean()
+					nacc=(ans==cor).mean().get(cp.cuda.get_current_stream())
 					acc =infobeta*nacc + (1-infobeta)*acc
-				sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
+				sample_loss=self.loss(logits=logits,labels=y_inp).mean().get(cp.cuda.get_current_stream())/10
 				loss =infobeta*sample_loss + (1-infobeta)*loss
 				samtm=time.time()-smtst
 				sam_time=infobeta*samtm + (1-infobeta)*sam_time
 				rem_sam=(lnxinp-idx)/batch_size
 				eta=int(rem_sam*sam_time)
-				print(f"\rProgress: {str(idx):>6} / {lnxinp}  - {eta}s - {sam_time:.2f}s/sample - loss: {sample_loss.get():.4f} - accuracy: {acc.get():.4f}",end="      _")
+				print(f"\rProgress: {str(idx):>6} / {lnxinp}  - {eta}s - {sam_time:.3f}s/sample - loss: {sample_loss:.4f} - accuracy: {acc:.4f}",end=" -  _")
 			end=time.time()
-			print(f"\nEpoch time: {end-start:.3f}s")
+			print(f"\b\bTime: {end-start:.3f}s")
 			if accuracy_metric:
 				self.validate(validation_data,batch_size,infobeta)
 
@@ -107,9 +107,8 @@ class Sequential:
 		while vidx<lnvx:
 			inp=VX[vidx:vidx+batch_size]
 			y_inp=VY[vidx:vidx+batch_size]
-			vidx+=batch_size#inp.shape[0]
-			logits=self.train_on_batch(inp,y_inp)
-			# logits=self.predict(inp)
+			vidx+=inp.shape[0]
+			logits=self.predict(inp)
 			if self.loss==cross_entropy_with_logits:
 				ans=logits.argmax(axis=1)
 				cor=y_inp.argmax(axis=1)
@@ -120,7 +119,7 @@ class Sequential:
 			sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
 			vloss=infobeta*sample_loss + (1-infobeta)*vloss
 		end=time.time()
-		print(f"\rValidation Accuracy: {(vacc/lnvx).get():.4f} - val_loss: {vloss.get():.4f} - Time: {end-start:.3f}s")
+		print(f"\rValidation Accuracy: {(vacc/lnvx).get(cp.cuda.get_current_stream()):.4f} - val_loss: {vloss.get(cp.cuda.get_current_stream()):.4f} - Time: {end-start:.3f}s")
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):
 		self.optimizer=optimizer

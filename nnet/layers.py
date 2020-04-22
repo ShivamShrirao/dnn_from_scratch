@@ -448,16 +448,16 @@ class dropout(Layer):
 		self.batches=1
 		self.rate=rate
 		self.scale=1/(1-rate)
-		self.mask=np.random.random((self.batches,*input_shape))>self.rate
+		self.mask=np.random.random((self.batches,*input_shape),dtype=np.float32)>self.rate
 		self.param=0
 		self.activation=echo
 
 	def forward(self,inp,training=True):
 		if training:
-			self.mask=self.scale*np.random.random(inp.shape)>self.rate 		#generate mask with rate probability
+			self.mask=(self.scale*(np.random.random(inp.shape,dtype=np.float32)>self.rate)).astype(np.float32,copy=False) 		#generate mask with rate probability
 			return inp*self.mask
 		else:
-			self.mask=inp
+			self.mask.fill(1.0)
 			return inp
 
 	def backprop(self,grads,layer=1):

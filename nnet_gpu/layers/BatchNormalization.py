@@ -15,15 +15,15 @@ class BatchNormalization(Layer):
 		self.shape=(None,*input_shape)
 		self.batches=1
 		self.inp_shape=(self.batches,*input_shape)
-		self.biases=cp.zeros(input_shape).astype(self.dtype)		#biases is beta
-		self.weights=cp.ones(input_shape).astype(self.dtype)		#weights is gamma
+		self.biases=cp.zeros(input_shape,dtype=self.dtype)		#biases is beta
+		self.weights=cp.ones(input_shape,dtype=self.dtype)		#weights is gamma
 		self.gamma=self.weights
 		self.beta=self.biases
 		self.kernels = self.weights
-		self.w_m=cp.zeros_like(self.weights)
-		self.w_v=cp.zeros_like(self.weights)
-		self.b_m=cp.zeros_like(self.biases)
-		self.b_v=cp.zeros_like(self.biases)
+		self.w_m=cp.zeros_like(self.weights,dtype=self.dtype)
+		self.w_v=cp.zeros_like(self.weights,dtype=self.dtype)
+		self.b_m=cp.zeros_like(self.biases,dtype=self.dtype)
+		self.b_v=cp.zeros_like(self.biases,dtype=self.dtype)
 		self.epsilon=epsilon
 		self.momentum=momentum
 		self.moving_mean=None

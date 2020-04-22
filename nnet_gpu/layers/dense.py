@@ -5,7 +5,7 @@ from . import seqinst
 class dense(Layer):
 	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):
 		super().__init__()
-		self.dtype=np.float32
+		self.dtype=cp.float32
 		self.type=self.__class__.__name__
 		if name is None:
 			self.name=self.__class__.__name__
@@ -17,7 +17,7 @@ class dense(Layer):
 			self.input_shape=input_shape
 		self.activation=activation
 		if weights is None:
-			self.weights = std*cp.random.randn(self.input_shape,num_out).astype(self.dtype,copy=False) + mean
+			self.weights = std*cp.random.randn(self.input_shape,num_out,dtype=self.dtype) + mean
 			# weights/=np.sqrt(self.input_shape)
 		else:
 			if weights.shape!=(self.input_shape,num_out):
@@ -25,17 +25,17 @@ class dense(Layer):
 			else:
 				self.weights = cp.asarray(weights)
 		if biases is None:
-			self.biases = std*cp.random.randn(1,num_out).astype(self.dtype,copy=False) + mean
+			self.biases = std*cp.random.randn(1,num_out,dtype=self.dtype) + mean
 		else:
 			if biases.shape!=(1,num_out):
 				raise Exception("biases should be of shape: "+str((1,num_out)))
 			else:
 				self.biases = cp.asarray(biases)
 		self.kernels = self.weights
-		self.w_m=cp.zeros_like(self.weights)
-		self.w_v=cp.zeros_like(self.weights)
-		self.b_m=cp.zeros_like(self.biases)
-		self.b_v=cp.zeros_like(self.biases)
+		self.w_m=cp.zeros_like(self.weights,dtype=self.dtype)
+		self.w_v=cp.zeros_like(self.weights,dtype=self.dtype)
+		self.b_m=cp.zeros_like(self.biases,dtype=self.dtype)
+		self.b_v=cp.zeros_like(self.biases,dtype=self.dtype)
 		self.shape=(None,num_out)
 		self.param=self.input_shape*num_out + num_out
 		self.not_softmax_cross_entrp=True
@@ -45,7 +45,7 @@ class dense(Layer):
 			self.notEcho=True
 
 	def forward(self,inp,training=True):
-		self.inp=cp.asarray(inp)
+		self.inp=inp
 		self.z_out=self.inp.dot(self.weights)+self.biases
 		self.a_out=self.activation(self.z_out)
 		return self.a_out

@@ -52,9 +52,9 @@ col2im = cp.ElementwiseKernel(
 	'col2im')
 
 def init_kernel_bias(num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,dtype=cp.float32):
-		weights = std*cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels) + mean
+		weights = std*cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels,dtype=cp.float32) + mean
 		# weights/=cp.sqrt(num_inp_channels)
-		bias = std*cp.random.randn(1,num_kernels) + mean
+		bias = std*cp.random.randn(1,num_kernels,dtype=cp.float32) + mean
 		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)
 
 class _emptyHelper:
@@ -111,11 +111,11 @@ class conv2d(Layer):
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		self.is_not_dker=True
 		if backp:
-			self.w_m=cp.zeros_like(self.weights)
-			self.w_v=cp.zeros_like(self.weights)
+			self.w_m=cp.zeros_like(self.weights,dtype=self.dtype)
+			self.w_v=cp.zeros_like(self.weights,dtype=self.dtype)
 			if self.bias_is_not_0:
-				self.b_m=cp.zeros_like(self.biases)
-				self.b_v=cp.zeros_like(self.biases)
+				self.b_m=cp.zeros_like(self.biases,dtype=self.dtype)
+				self.b_v=cp.zeros_like(self.biases,dtype=self.dtype)
 			self.init_back()
 
 	def init_back(self):

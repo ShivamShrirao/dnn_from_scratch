@@ -58,18 +58,22 @@ class Sequential:
 		for epch in range(epochs):
 			print("EPOCH:",epch+1,"/",epochs)
 			if iterator==None:
-				s=cp.random.permutation(lnxinp)
-				X_inp=X_inp[s]
-				labels=labels[s]
+				if shuffle:
+					s=cp.random.permutation(lnxinp).astype(cp.int32,copy=False)
+					X_inp=X_inp[s]
+					labels=labels[s]
+					del s
 			start=time.time()
 			idx=0
 			while idx<lnxinp:
 				smtst=time.time()
 				if iterator!=None:
 					inp,y_inp=iterator.next()
+					inp=cp.asarray(inp)
+					y_inp=cp.asarray(y_inp)
 				else:
-					inp=X_inp[idx:idx+batch_size]
-					y_inp=labels[idx:idx+batch_size]
+					inp=cp.asarray(X_inp[idx:idx+batch_size])
+					y_inp=cp.asarray(labels[idx:idx+batch_size])
 				idx+=inp.shape[0]
 				logits=self.train_on_batch(inp,y_inp)
 				if accuracy_metric:
@@ -105,8 +109,8 @@ class Sequential:
 		print("Calculating Validation Accuracy....",end="")
 		start=time.time()
 		while vidx<lnvx:
-			inp=VX[vidx:vidx+batch_size]
-			y_inp=VY[vidx:vidx+batch_size]
+			inp=cp.asarray(VX[vidx:vidx+batch_size])
+			y_inp=cp.asarray(VY[vidx:vidx+batch_size])
 			vidx+=inp.shape[0]
 			logits=self.predict(inp)
 			if self.loss==cross_entropy_with_logits:

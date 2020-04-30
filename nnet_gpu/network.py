@@ -30,29 +30,27 @@ class Sequential:
 			X_inp=obj.forward(X_inp,training=training)
 		return X_inp
 
-	def backprop(self,err,i):
+	def backprop(self,grads,i):
 		for obj in self.sequence[::-1]:
-			err=obj.backprop(err,layer=i)
+			grads=obj.backprop(grads,layer=i)
 			i-=1
-		return err
+		return grads
 
 	def predict(self,X_inp):
 		return self.forward(X_inp.astype(self.dtype,copy=False),training=False)
 
 	def train_on_batch(self,X_inp,labels):
 		X_inp=self.forward(X_inp.astype(self.dtype,copy=False))
-		self.logit_event=cp.cuda.get_current_stream().record()
-		err=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
-		self.backprop(err,self.lenseq_m1)
+		grads=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
+		self.backprop(grads,self.lenseq_m1)
 		self.optimizer(self.sequence,self.learning_rate,self.beta)
 		return X_inp
 
 	def not_train_on_batch(self,X_inp,labels):
 		X_inp=self.forward(X_inp.astype(self.dtype,copy=False))
-		self.logit_event=cp.cuda.get_current_stream().record()
-		err=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
-		err=self.backprop(err,self.lenseq_m1+1)
-		return X_inp,err
+		grads=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
+		grads=self.backprop(grads,self.lenseq_m1+1)
+		return X_inp,grads
 
 	def fit(self,X_inp=None,labels=None,iterator=None,batch_size=1,epochs=1,validation_data=None,shuffle=True,accuracy_metric=True,infobeta=0.2):
 		lnxinp=len(X_inp)
@@ -81,6 +79,7 @@ class Sequential:
 					y_inp=cp.asarray(labels[idx:idx+batch_size])
 				idx+=inp.shape[0]
 				logits=self.train_on_batch(inp,y_inp)
+				self.logit_event=cp.cuda.get_current_stream().record()
 				with eval_stream:
 					eval_stream.wait_event(self.logit_event)
 					if accuracy_metric:

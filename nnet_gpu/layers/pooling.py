@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from .base_layer import *
 from . import seqinst
+from ..stream_handler import stream_maps
 
 class max_pool(Layer):
 	def __init__(self,input_shape=None,ksize=[2,2],stride=[2,2],name=None):
@@ -25,6 +26,7 @@ class max_pool(Layer):
 		# self.row-=self.rem_col
 		# self.col-=self.rem_col
 		self.shape=(None,self.out_row,self.out_col,self.channels)
+		self.mask_stream=stream_maps.get_next_stream()
 
 	def forward(self,inp,training=True):
 		self.input_shape=inp.shape
@@ -36,7 +38,8 @@ class max_pool(Layer):
 		self.batches=batches
 		inp=inp.reshape(self.batches,self.out_row,self.ksz,self.out_col,self.ksz,self.channels)
 		output=inp.max(axis=(2,4),keepdims=True)
-		self.mask=(inp==output)
+		with self.mask_stream:
+			self.mask=(inp==output)
 		return output.reshape(self.batches,self.out_row,self.out_col,self.channels)
 
 	def backprop(self,grads,layer=1):

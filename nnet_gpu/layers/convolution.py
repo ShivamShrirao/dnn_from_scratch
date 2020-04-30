@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from .base_layer import *
 from . import seqinst
+from ..stream_handler import stream_maps
 
+# Both kernels from chainer. May make more efficient by calculating indices once and using them again and again, like done in CPU version.
 im2col = cp.ElementwiseKernel(
 	'raw T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
 	'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
@@ -111,6 +113,8 @@ class conv2d(Layer):
 		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
 		self.is_not_dker=True
 		if backp:
+			self.backp_stream=stream_maps.get_next_stream()
+			self.grad_event=stream_maps.default_stream.record()
 			self.w_m=cp.zeros_like(self.weights,dtype=self.dtype)
 			self.w_v=cp.zeros_like(self.weights,dtype=self.dtype)
 			if self.bias_is_not_0:
@@ -166,7 +170,10 @@ class conv2d(Layer):
 		if self.activation != echo:
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=grads 						# set gradients as kernel
-		self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
+		self.grad_event=stream_maps.default_stream.record(self.grad_event)
+		with self.backp_stream:
+			self.backp_stream.wait_event(self.grad_event)
+			self.d_c_w=self.d_ker.forward(self.inp.transpose(1,2,3,0))	#[channels,row,col,batches]
 		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if layer:
@@ -175,8 +182,9 @@ class conv2d(Layer):
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:
-			self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
-			# self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
+			with self.backp_stream:
+				self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
+				# self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs
 
 class conv2dtranspose(conv2d):

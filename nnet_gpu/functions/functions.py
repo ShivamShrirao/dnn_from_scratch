@@ -27,6 +27,15 @@ def relu(z,a=None,derivative=False):
 		# return z*(z>0)
 		return cp.maximum(0,z)
 
+class relu_impl:
+	# can cache z>0 ??
+	def forward(self,z):
+		return cp.maximum(0,z)
+
+	def backprop(self,z,a=None,grads=None):
+		grads*=(z>0)
+		return grads
+
 def elu(z,a=None,derivative=False):			#alpha is 1
 	if derivative:
 		return cp.where(z>0, 1, a+1)
@@ -55,7 +64,10 @@ def softmax(z,a=None,derivative=False):
 		return 1
 	else:
 		exps = cp.exp(z-cp.max(z, axis=1, keepdims = True))
-		return exps/cp.sum(exps, axis=1, keepdims = True)
+		# return exps/cp.sum(exps, axis=1, keepdims = True)
+		exps/=cp.sum(exps, axis=1, keepdims = True)
+		return exps
+
 
 def cross_entropy_with_logits(logits,labels,epsilon=1e-12):
 	return -cp.sum(labels*cp.log(logits+epsilon),axis=0,keepdims=True)

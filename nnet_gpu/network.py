@@ -2,6 +2,8 @@
 from . import layers
 from .functions import *
 from .optimizers import *
+from .stream_handler import stream_maps
+
 import pickle
 from gc import collect
 import time
@@ -39,6 +41,7 @@ class Sequential:
 
 	def train_on_batch(self,X_inp,labels):
 		X_inp=self.forward(X_inp.astype(self.dtype,copy=False))
+		self.logit_event=cp.cuda.get_current_stream().record()
 		err=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
 		self.backprop(err,self.lenseq_m1)
 		self.optimizer(self.sequence,self.learning_rate,self.beta)
@@ -46,6 +49,7 @@ class Sequential:
 
 	def not_train_on_batch(self,X_inp,labels):
 		X_inp=self.forward(X_inp.astype(self.dtype,copy=False))
+		self.logit_event=cp.cuda.get_current_stream().record()
 		err=self.del_loss(X_inp,labels.astype(self.dtype,copy=False))
 		err=self.backprop(err,self.lenseq_m1+1)
 		return X_inp,err
@@ -65,6 +69,7 @@ class Sequential:
 					del s
 			start=time.time()
 			idx=0
+			eval_stream=stream_maps.get_next_stream()
 			while idx<lnxinp:
 				smtst=time.time()
 				if iterator!=None:
@@ -76,22 +81,24 @@ class Sequential:
 					y_inp=cp.asarray(labels[idx:idx+batch_size])
 				idx+=inp.shape[0]
 				logits=self.train_on_batch(inp,y_inp)
-				if accuracy_metric:
-					if self.loss==cross_entropy_with_logits:
-						ans=logits.argmax(axis=1)
-						cor=y_inp.argmax(axis=1)
-					else:
-						ans=logits
-						cor=y_inp
-					nacc=(ans==cor).mean().get(cp.cuda.get_current_stream())
-					acc =infobeta*nacc + (1-infobeta)*acc
-				sample_loss=self.loss(logits=logits,labels=y_inp).mean().get(cp.cuda.get_current_stream())/10
-				loss =infobeta*sample_loss + (1-infobeta)*loss
-				samtm=time.time()-smtst
-				sam_time=infobeta*samtm + (1-infobeta)*sam_time
-				rem_sam=(lnxinp-idx)/batch_size
-				eta=int(rem_sam*sam_time)
-				print(f"\rProgress: {str(idx):>6} / {lnxinp}  - {eta}s - {sam_time:.3f}s/sample - loss: {sample_loss:.4f} - accuracy: {acc:.4f}",end=" -  _")
+				with eval_stream:
+					eval_stream.wait_event(self.logit_event)
+					if accuracy_metric:
+						if self.loss==cross_entropy_with_logits:
+							ans=logits.argmax(axis=1)
+							cor=y_inp.argmax(axis=1)
+						else:
+							ans=logits
+							cor=y_inp
+						nacc=(ans==cor).mean().get(eval_stream)
+						acc =infobeta*nacc + (1-infobeta)*acc
+					sample_loss=self.loss(logits=logits,labels=y_inp).mean().get(eval_stream)/10
+					loss =infobeta*sample_loss + (1-infobeta)*loss
+					samtm=time.time()-smtst
+					sam_time=infobeta*samtm + (1-infobeta)*sam_time
+					rem_sam=(lnxinp-idx)/batch_size
+					eta=int(rem_sam*sam_time)
+					print(f"\rProgress: {str(idx):>6} / {lnxinp}  - {eta}s - {sam_time:.3f}s/sample - loss: {sample_loss:.4f} - accuracy: {acc:.4f}",end=" -  _")
 			end=time.time()
 			print(f"\b\bTime: {end-start:.3f}s")
 			if accuracy_metric:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from .base_layer import *
 from . import seqinst
+from ..stream_handler import stream_maps
 
 class BatchNormalization(Layer):
 	def __init__(self,momentum=0.9,epsilon=1e-10,name=None):
@@ -30,6 +31,7 @@ class BatchNormalization(Layer):
 		self.moving_var=None
 		self.param=4*input_shape[-1]
 		self.activation=echo
+		self.backp_stream=stream_maps.get_next_stream()
 
 	def forward(self,inp,training=True):		# yeah, I know, too many repetitions
 		#inp[batches,row,col,channels]

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from .base_layer import *
 from . import seqinst
+from ..stream_handler import stream_maps
 
 class dense(Layer):
 	def __init__(self,num_out,input_shape=None,weights=None,biases=None,activation=echo,mean=0,std=0.01,name=None):
@@ -43,6 +44,8 @@ class dense(Layer):
 			self.notEcho=False
 		else:
 			self.notEcho=True
+		self.backp_stream=stream_maps.get_next_stream()
+		self.grad_event=stream_maps.default_stream.record()
 
 	def forward(self,inp,training=True):
 		self.inp=inp
@@ -53,11 +56,15 @@ class dense(Layer):
 	def backprop(self,grads,layer=1):
 		if self.notEcho and self.not_softmax_cross_entrp:			# make it better in future
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
-		self.d_c_w=self.inp.T.dot(grads)#/self.inp.shape[0]
+		self.grad_event=stream_maps.default_stream.record(self.grad_event)
+		with self.backp_stream:
+			self.backp_stream.wait_event(self.grad_event)
+			self.d_c_w=self.inp.T.dot(grads)#/self.inp.shape[0]
 		if layer:
 			d_c_a=grads.dot(self.weights.T)
 		else:
 			d_c_a=0
-		self.d_c_b=grads.sum(axis=0,keepdims=True)
-		# self.d_c_b=grads.mean(axis=0,keepdims=True)
+		with self.backp_stream:
+			self.d_c_b=grads.sum(axis=0,keepdims=True)
+			# self.d_c_b=grads.mean(axis=0,keepdims=True)
 		return d_c_a

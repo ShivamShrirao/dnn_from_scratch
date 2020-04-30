@@ -112,7 +112,6 @@ class Sequential:
 		vidx=0
 		vacc=0
 		vloss=0
-		eval_stream=stream_maps.get_next_stream()
 		print("Calculating Validation Accuracy....",end="")
 		start=time.time()
 		while vidx<lnvx:
@@ -130,8 +129,7 @@ class Sequential:
 			sample_loss=self.loss(logits=logits,labels=y_inp).mean()/10
 			vloss=infobeta*sample_loss + (1-infobeta)*vloss
 		end=time.time()
-		with eval_stream:
-			print(f"\rValidation Accuracy: {(vacc/lnvx).get(eval_stream):.4f} - val_loss: {vloss.get(eval_stream):.4f} - Time: {end-start:.3f}s")
+		print(f"\rValidation Accuracy: {(vacc/lnvx).get():.4f} - val_loss: {vloss.get():.4f} - Time: {end-start:.3f}s")
 
 	def compile(self,optimizer=adam,beta=0.9,loss=cross_entropy_with_logits,learning_rate=0.001):
 		self.optimizer=optimizer

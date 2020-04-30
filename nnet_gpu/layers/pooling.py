@@ -27,6 +27,7 @@ class max_pool(Layer):
 		# self.col-=self.rem_col
 		self.shape=(None,self.out_row,self.out_col,self.channels)
 		self.mask_stream=stream_maps.get_next_stream()
+		self.out_event=stream_maps.default_stream.record()
 
 	def forward(self,inp,training=True):
 		self.input_shape=inp.shape
@@ -38,7 +39,9 @@ class max_pool(Layer):
 		self.batches=batches
 		inp=inp.reshape(self.batches,self.out_row,self.ksz,self.out_col,self.ksz,self.channels)
 		output=inp.max(axis=(2,4),keepdims=True)
+		self.out_event=stream_maps.default_stream.record(self.out_event)
 		with self.mask_stream:
+			self.mask_stream.wait_event(self.out_event)
 			self.mask=(inp==output)
 		return output.reshape(self.batches,self.out_row,self.out_col,self.channels)
 

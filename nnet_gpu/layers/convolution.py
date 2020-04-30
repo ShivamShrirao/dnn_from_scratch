@@ -3,7 +3,8 @@ from .base_layer import *
 from . import seqinst
 from ..stream_handler import stream_maps
 
-# Both kernels from chainer. May make more efficient by calculating indices once and using them again and again, like done in CPU version.
+# Both kernels from chainer. May make more efficient by calculating indices once and reusing them all time,
+# like done in CPU version, instead of having to calculate everytime.
 im2col = cp.ElementwiseKernel(
 	'raw T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
 	'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
@@ -143,7 +144,6 @@ class conv2d(Layer):
 				self.dilation[0], self.dilation[1],
 				col)
 		self.z_out = cp.tensordot(col, self.kernels, ((1, 2, 3), (0, 1, 2)))
-		# del col
 		if self.bias_is_not_0:
 			self.z_out+=self.biases
 		assert self.z_out.shape==(self.batches,self.out_row,self.out_col,self.num_kernels)

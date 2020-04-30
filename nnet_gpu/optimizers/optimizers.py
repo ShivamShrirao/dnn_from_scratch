@@ -44,7 +44,7 @@ adamkern=cp.ElementwiseKernel(
 		param -= learning_rate * (mcap / (sqrt(vcap) + epsilon));''',
 	'adamkern')
 
-def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8,decay=0):		# decay not functional rn
+def adam(sequence,learning_rate=0.001,beta1=0.9,beta2=0.999,epsilon=1e-8):
 	for obj in sequence:
 		if obj.param>0:
 			# Update weights

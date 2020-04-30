@@ -41,14 +41,16 @@ class BatchNormalization(Layer):
 			mean=inp.mean(axis=0)					#(row,col,channels)
 			self.xmu=inp-mean 						#(batches,row,col,channels)
 			var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
+			self.grad_event=stream_maps.default_stream.record(self.grad_event)
 			self.ivar=1/(var+self.epsilon)			#(row,col,channels)
 			self.istd=cp.sqrt(self.ivar)				#(row,col,channels)
 			self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
-			if self.moving_mean is None:
-				self.moving_mean=mean
-				self.moving_var=var
-			else:
-				with self.backp_stream:
+			with self.backp_stream:
+				self.backp_stream.wait_event(self.grad_event)
+				if self.moving_mean is None:
+					self.moving_mean=mean
+					self.moving_var=var
+				else:
 					self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
 					self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*var
 		else:
@@ -64,9 +66,11 @@ class BatchNormalization(Layer):
 				self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
 			else:
 				self.inp_shape=inp.shape
-				# self.xmu=inp								#(batches,row,col,channels)	## all this is just for proper shape while model.free()
-				# self.istd=self.moving_var					#(row,col,channels)
-				self.xnorm=(inp-self.moving_mean)/cp.sqrt(self.moving_var+self.epsilon)
+				self.xmu=inp-self.moving_mean				#(batches,row,col,channels)	## all this is just for proper shape while model.free()
+				self.ivar=1/(self.moving_var+self.epsilon)
+				self.istd=cp.sqrt(self.ivar)	#(row,col,channels)
+				self.xnorm=self.xmu*self.istd
+				# self.xnorm=(inp-self.moving_mean)/cp.sqrt(self.moving_var+self.epsilon)
 		return self.xnorm*self.weights+self.biases
 
 	def backprop(self,grads,layer=1):

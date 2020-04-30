@@ -48,8 +48,9 @@ class BatchNormalization(Layer):
 				self.moving_mean=mean
 				self.moving_var=var
 			else:
-				self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
-				self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*var
+				with self.backp_stream:
+					self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
+					self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*var
 		else:
 			if self.moving_mean is None:
 				self.inp_shape=inp.shape
@@ -73,11 +74,14 @@ class BatchNormalization(Layer):
 		batches=self.inp_shape[0]
 		if batches!=self.batches:
 			self.batches=batches
+
+		with self.backp_stream:
+			self.d_c_w=(self.xnorm*grads).sum(axis=0)	#(row,col,channels)		# gamma is weights
+
 		self.d_c_b=grads.sum(axis=0) 				#(row,col,channels)		# biases is beta
 		self.grad_event=stream_maps.default_stream.record(self.grad_event)
-		with self.backp_stream:
-			self.backp_stream.wait_event(self.grad_event)
-			self.d_c_w=(self.xnorm*grads).sum(axis=0)	#(row,col,channels)		# gamma is weights
+		self.backp_stream.wait_event(self.grad_event)
+
 		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		# d_inp=self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		return d_inp

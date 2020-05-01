@@ -33,6 +33,14 @@ class BatchNormalization(Layer):
 		self.activation=echo
 		self.backp_stream=stream_maps.get_next_stream()
 		self.grad_event=stream_maps.default_stream.record()
+		# self.update_moving = cp.ElementwiseKernel(
+		# 'T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
+		# 'T coled',
+		# '''
+		# 	int in_y = ky * dy + out_y * sy - ph;
+		# 	int in_x = kx * dx + out_x * sx - pw;
+		# ''',
+		# 'update_moving')
 
 	def forward(self,inp,training=True):		# yeah, I know, too many repetitions
 		#inp[batches,row,col,channels]			## MAKE A KERNEL
@@ -84,6 +92,6 @@ class BatchNormalization(Layer):
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w=(self.xnorm*grads).sum(axis=0)	#(row,col,channels)		# gamma is weights
 
-		d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
-		# d_inp=self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
+		# d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
+		d_inp=self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		return d_inp

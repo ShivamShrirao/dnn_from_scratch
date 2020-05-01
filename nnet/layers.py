@@ -527,7 +527,7 @@ class BatchNormalization(Layer):					#Have to add references to each brah
 		return self.xnorm*self.weights+self.biases
 
 	def backprop(self,grads,layer=1):
-		#grads(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#FU
+		#grads(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean
 		batches=self.inp_shape[0]
 		if batches!=self.batches:
 			self.batches=batches

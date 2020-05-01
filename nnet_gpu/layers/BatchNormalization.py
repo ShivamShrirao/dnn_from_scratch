@@ -35,9 +35,9 @@ class BatchNormalization(Layer):
 		self.grad_event=stream_maps.default_stream.record()
 
 	def forward(self,inp,training=True):		# yeah, I know, too many repetitions
-		#inp[batches,row,col,channels]
+		#inp[batches,row,col,channels]			## MAKE A KERNEL
+		self.inp_shape=inp.shape
 		if training:
-			self.inp_shape=inp.shape
 			mean=inp.mean(axis=0)					#(row,col,channels)
 			self.xmu=inp-mean 						#(batches,row,col,channels)
 			var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
@@ -52,10 +52,9 @@ class BatchNormalization(Layer):
 					self.moving_var=var
 				else:
 					self.moving_mean=self.momentum*self.moving_mean + (1-self.momentum)*mean
-					self.moving_var=self.momentum*self.moving_var + (1-self.momentum)*var
+					self.moving_var =self.momentum*self.moving_var  + (1-self.momentum)*var
 		else:
 			if self.moving_mean is None:
-				self.inp_shape=inp.shape
 				mean=inp.mean(axis=0)					#(row,col,channels)
 				self.xmu=inp-mean 						#(batches,row,col,channels)
 				var=(self.xmu**2).mean(axis=0)			#(row,col,channels)
@@ -65,7 +64,6 @@ class BatchNormalization(Layer):
 				self.moving_var=var
 				self.xnorm=self.xmu*self.istd 				#(batches,row,col,channels)
 			else:
-				self.inp_shape=inp.shape
 				self.xmu=inp-self.moving_mean				#(batches,row,col,channels)	## all this is just for proper shape while model.free()
 				self.ivar=1/(self.moving_var+self.epsilon)
 				self.istd=cp.sqrt(self.ivar)	#(row,col,channels)
@@ -74,7 +72,7 @@ class BatchNormalization(Layer):
 		return self.xnorm*self.weights+self.biases
 
 	def backprop(self,grads,layer=1):
-		#grads(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean 		#FU
+		#grads(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean
 		batches=self.inp_shape[0]
 		if batches!=self.batches:
 			self.batches=batches

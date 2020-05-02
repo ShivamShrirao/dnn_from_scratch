@@ -54,12 +54,6 @@ col2im = cp.ElementwiseKernel(
 	''',
 	'col2im')
 
-def init_kernel_bias(num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,dtype=cp.float32):
-		weights = std*cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels,dtype=cp.float32) + mean
-		# weights/=cp.sqrt(num_inp_channels)
-		bias = std*cp.random.randn(1,num_kernels,dtype=cp.float32) + mean
-		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)
-
 class _emptyHelper:
 	def __init__(self,shape):
 		self.shape=shape
@@ -88,11 +82,9 @@ class conv2d(Layer):
 				self.kernel_size=(kernel_size,kernel_size)
 			else:
 				self.kernel_size=kernel_size
-			self.num_kernels=num_kernels
-			self.kernels,self.biases = init_kernel_bias(self.channels,self.kernel_size,self.num_kernels,std=std,dtype=self.dtype)
+			self.kernels,self.biases = self.init_kernel_bias(self.channels,self.kernel_size,num_kernels,std=std,dtype=self.dtype)
 		else:
 			self.kernel_size=kernels.shape[1:3]
-			self.num_kernels=kernels.shape[3]
 		self.weights = self.kernels
 		self.bias_is_not_0=True
 		if cp.isscalar(self.biases):				# DO BETTER FIX
@@ -111,8 +103,6 @@ class conv2d(Layer):
 		else:
 			self.out_col=out_col
 		self.param=(self.kernel_size[0]*self.kernel_size[1]*self.channels+1)*self.num_kernels
-		self.shape=(None,self.out_row,self.out_col,self.num_kernels)
-		self.is_not_dker=True
 		if backp:
 			self.backp_stream=stream_maps.get_next_stream()
 			self.grad_event=stream_maps.default_stream.record()
@@ -123,11 +113,24 @@ class conv2d(Layer):
 				self.b_v=cp.zeros_like(self.biases,dtype=self.dtype)
 			self.init_back()
 
+	@property
+	def num_kernels(self):
+		return self.kernels.shape[3]
+
+	@property
+	def shape(self):
+		return (None,self.out_row,self.out_col,self.num_kernels)
+
 	def init_back(self):
 		grads = _emptyHelper((self.batches,self.out_row,self.out_col,self.num_kernels))
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,stride=(1,1),dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
-		self.d_ker.is_not_dker=False
 		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)
+
+	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,dtype=cp.float32):
+		weights = std*cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels,dtype=cp.float32) + mean
+		# weights/=cp.sqrt(num_inp_channels)
+		bias = std*cp.random.randn(1,num_kernels,dtype=cp.float32) + mean
+		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)
 
 	def cal_outsize(self,sz,ksz,stride,pad,dilation=1):
 		dksz = (ksz-1)*dilation + 1		# dilated kernel
@@ -145,7 +148,7 @@ class conv2d(Layer):
 				col)
 		self.z_out = cp.tensordot(col, self.kernels, ((1, 2, 3), (0, 1, 2)))
 		if self.bias_is_not_0:
-			self.z_out+=self.biases
+			self.z_out=cp.add(self.z_out,self.biases)
 		assert self.z_out.shape==(self.batches,self.out_row,self.out_col,self.num_kernels)
 		self.a_out=self.activation(self.z_out)
 		return self.a_out				# a_out[self.batches,self.out_row,self.out_col,self.num_kernels]
@@ -190,6 +193,21 @@ class conv2d(Layer):
 class conv2dtranspose(conv2d):
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
+	
+	@property
+	def num_kernels(self):
+		return self.kernels.shape[0]
+
+	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,dtype=cp.float32):
+		weights = std*cp.random.randn(num_kernels, kernel_size[0], kernel_size[1], num_inp_channels,dtype=cp.float32) + mean
+		# weights/=cp.sqrt(num_inp_channels)
+		bias = std*cp.random.randn(1,num_kernels,dtype=cp.float32) + mean
+		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)
+
+	def init_back(self):
+		inp = _emptyHelper((self.batches,self.row,self.col,self.channels))
+		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=inp,activation=echo,stride=(1,1),dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
+		self.d_inp=conv2d(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)
 
 	def cal_outsize(self,sz,ksz,stride,pad,dilation=1):
 		# dksz = (ksz-1)*dilation + 1		# dilated kernel
@@ -202,15 +220,34 @@ class conv2dtranspose(conv2d):
 		col=cp.tensordot(self.kernels,self.inp,(3,1))
 		col=cp.moveaxis(col,3,0)				# CAN WE REMOVE THIS SOMEHOW ??
 		col=cp.ascontiguousarray(col)
-		self.z_out=cp.empty((self.batches, self.kernels.shape[0], self.out_row, self.out_col), dtype=col.dtype)
+		self.z_out=cp.empty((self.batches, self.num_kernels, self.out_row, self.out_col), dtype=col.dtype)
 		col2im(col.reduced_view(), self.out_row, self.out_col, self.row, self.col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
 				self.dilation[0], self.dilation[1],
 				self.z_out)
+		self.z_out=self.z_out.transpose(0,2,3,1)
 		if self.bias_is_not_0:
-			self.z_out+=self.biases
+			self.z_out=cp.add(self.z_out,self.biases)				# z_out[batches,out_row,out_col,num_kernels]
 		self.a_out=self.activation(self.z_out)
-		return self.a_out.transpose(0,2,3,1)			# a_out[batches,out_row,out_col,num_kernels]
+		return self.a_out				# a_out[batches,out_row,out_col,num_kernels]
 
 	def backprop(self,grads,layer=1):
-		pass
+		if self.activation != echo:
+			grads*=self.activation(self.z_out,self.a_out,derivative=True)
+		self.d_ker.kernels=self.inp.transpose(0,2,3,1)	# t makes[batches,row,col,channels]
+		self.grad_event=stream_maps.default_stream.record(self.grad_event)
+		with self.backp_stream:
+			self.backp_stream.wait_event(self.grad_event)
+			self.d_c_w=self.d_ker.forward(grads.transpose(3,1,2,0))	#[channels,row,col,batches]
+		# self.d_c_w/=self.batches		#take mean change over batches
+		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
+		if layer:
+			d_inputs=cp.ascontiguousarray(self.d_inp.forward(grads))
+			assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
+		else:
+			d_inputs=0
+		if self.bias_is_not_0:
+			with self.backp_stream:
+				self.d_c_b=grads.reshape(-1,self.num_kernels).sum(axis=0,keepdims=True)
+				# self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
+		return d_inputs

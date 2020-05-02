@@ -165,7 +165,7 @@ class Sequential:
 				else:
 					obj.weights,obj.biases=sv_me[idx]
 					if obj.__class__==layers.conv2d:
-						obj.d_inp.kernels=obj.weights
+						obj.kernels=obj.weights
 						obj.init_back()
 				obj.kernels=obj.weights
 				idx+=1

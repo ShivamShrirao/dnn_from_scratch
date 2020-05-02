@@ -141,12 +141,12 @@ class conv2d(Layer):
 		self.inp=inp
 		#inp[batches,channels,row,col]
 		self.batches,self.channels,self.row,self.col=self.inp.shape
-		col = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col), dtype=self.dtype)
+		coled = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col), dtype=self.dtype)
 		im2col(self.inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
 				self.dilation[0], self.dilation[1],
-				col)
-		self.z_out = cp.tensordot(col, self.kernels, ((1, 2, 3), (0, 1, 2)))
+				coled)
+		self.z_out = cp.tensordot(coled, self.kernels, ((1, 2, 3), (0, 1, 2)))
 		if self.bias_is_not_0:
 			self.z_out=cp.add(self.z_out,self.biases)
 		assert self.z_out.shape==(self.batches,self.out_row,self.out_col,self.num_kernels)
@@ -192,6 +192,9 @@ class conv2d(Layer):
 
 class conv2dtranspose(conv2d):
 	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
+		if (stride[0]+stride[1])>2:
+			if padding == None:
+				padding=((self.kernel_size[0]+1)//2,(self.kernel_size[1]+1)//2)
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
 	
 	@property
@@ -217,11 +220,11 @@ class conv2dtranspose(conv2d):
 		self.inp=inp.transpose(0,3,1,2)
 		#inp[batches,channels,row,col]
 		self.batches,self.channels,self.row,self.col=self.inp.shape
-		col=cp.tensordot(self.kernels,self.inp,(3,1))
-		col=cp.moveaxis(col,3,0)				# CAN WE REMOVE THIS SOMEHOW ??
-		col=cp.ascontiguousarray(col)
-		self.z_out=cp.empty((self.batches, self.num_kernels, self.out_row, self.out_col), dtype=col.dtype)
-		col2im(col.reduced_view(), self.out_row, self.out_col, self.row, self.col,
+		coled=cp.tensordot(self.kernels,self.inp,(3,1))
+		coled=cp.moveaxis(coled,3,0)				# CAN WE REMOVE THIS SOMEHOW ??
+		coled=cp.ascontiguousarray(coled)
+		self.z_out=cp.empty((self.batches, self.num_kernels, self.out_row, self.out_col), dtype=coled.dtype)
+		col2im(coled.reduced_view(), self.out_row, self.out_col, self.row, self.col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0], self.padding[1],
 				self.dilation[0], self.dilation[1],
 				self.z_out)

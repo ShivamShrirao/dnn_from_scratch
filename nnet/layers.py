@@ -215,7 +215,7 @@ class conv2dtranspose(conv2d):
 			dlate=stride
 			stride=[1,1]
 			if padding is None:
-				padding=kernel_size-1
+				padding=(kernel_size+1)//2
 		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,dlate=dlate,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
 
 class max_pool(Layer):

@@ -2,7 +2,7 @@
 from ..base_layer import *
 from .. import seqinst
 from ...stream_handler import stream_maps
-from conv_utils import *
+from .conv_utils import *
 
 class conv2d(Layer):
 	def __init__(self,num_kernels=0, input_shape=None, kernel_size=0, kernels=None, activation=echo, biases=0, stride=(1,1), dilation=(1,1), padding=None, batches=1, backp=True, std=0.01, name=None, out_row=None, out_col=None, off_transpose=0):
@@ -78,7 +78,7 @@ class conv2d(Layer):
 	# 	return True
 
 	def init_back(self):
-		grads = _emptyHelper((self.batches,self.out_row,self.out_col,self.num_kernels))
+		grads = emptyHelper((self.batches,self.out_row,self.out_col,self.num_kernels))
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,stride=(1,1),dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
 		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)
 

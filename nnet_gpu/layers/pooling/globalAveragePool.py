@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from max_pool import *
+from .max_pool import *
 
 class globalAveragePool(Layer):
 	def __init__(self,input_shape=None,name=None):

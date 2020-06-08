@@ -52,6 +52,6 @@ col2im = cp.ElementwiseKernel(
 	''',
 	'col2im')
 
-class _emptyHelper:
+class emptyHelper:
 	def __init__(self,shape):
 		self.shape=shape

@@ -199,6 +199,7 @@ Layer 1
 ## TO-DO
 
 * RNN and LSTM.
+* Write proper tests.
 * Auto Differentiation.
 * GPU support.
 * Fix loading and saving weights for training.

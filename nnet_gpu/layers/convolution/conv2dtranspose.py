@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 from .conv2d import *
 
-class conv2dtranspose(conv2d):
-	def __init__(self,num_kernels=0,input_shape=None,kernel_size=0,kernels=None,activation=echo,biases=0,stride=(1,1),dilation=(1,1),padding=None,batches=1,backp=True,std=0.01,name=None,out_row=None,out_col=None):
-		super().__init__(num_kernels=num_kernels,input_shape=input_shape,kernel_size=kernel_size,kernels=kernels,activation=activation,biases=biases,stride=stride,dilation=dilation,padding=padding,batches=batches,backp=backp,std=std,name=name,out_row=out_row,out_col=out_col)
+class conv2dtranspose(conv2d):										# kernels are flipped of cpu version rn, cpukern = gpukern[:,::-1,::-1,:].transpose(3,1,2,0)
+	def __init__(self, num_kernels=0, input_shape=None, kernel_size=0, kernels=None, activation=echo, biases=0, stride=(1,1), dilation=(1,1), padding=None, batches=1, backp=True, std=0.01, name=None, out_row=None, out_col=None):
+		super().__init__(num_kernels=num_kernels, input_shape=input_shape, kernel_size=kernel_size, kernels=kernels, activation=activation, biases=biases, stride=stride, dilation=dilation, padding=padding, batches=batches, backp=backp, std=std, name=name, out_row=out_row, out_col=out_col)
 
-	def cal_padding(self,sz,ksz,stride,dilation):
+	def cal_padding(self, sz, ksz, stride, dilation):
 		oht = self.cal_outsize(sz,ksz,stride,0,dilation)
 		return (stride * (sz - 1) + ksz - oht) // 2
 	
@@ -13,8 +13,8 @@ class conv2dtranspose(conv2d):
 	def num_kernels(self):
 		return self.kernels.shape[0]
 
-	def init_kernel_bias(self,num_inp_channels, kernel_size, num_kernels,mean=0,std=0.01,dtype=cp.float32):
-		weights = std*cp.random.randn(num_kernels, kernel_size[0], kernel_size[1], num_inp_channels,dtype=cp.float32) + mean
+	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=cp.float32):
+		weights = std*cp.random.randn(num_kernels, kernel_size[0], kernel_size[1], num_inp_channels, dtype=cp.float32) + mean
 		# weights/=cp.sqrt(num_inp_channels)
 		bias = std*cp.random.randn(1,num_kernels,dtype=cp.float32) + mean
 		return weights.astype(dtype,copy=False), bias.astype(dtype,copy=False)

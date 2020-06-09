@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from .activation import Activation
 from .base_layer import Layer
 from .base_layer import InputLayer
 from .BatchNormalization import BatchNormalization

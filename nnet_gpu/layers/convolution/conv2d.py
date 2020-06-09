@@ -78,6 +78,8 @@ class conv2d(Layer):
 	# 	return True
 
 	def init_back(self):
+		global conv2dtranspose
+		from .conv2dtranspose import conv2dtranspose
 		grads = emptyHelper((self.batches,self.out_row,self.out_col,self.num_kernels))
 		self.d_ker=conv2d(input_shape=(self.row,self.col,self.batches),kernels=grads,activation=echo,stride=(1,1),dilation=self.stride,padding=self.padding,backp=False,out_row=self.kernel_size[0],out_col=self.kernel_size[1])
 		self.d_inp=conv2dtranspose(input_shape=(self.out_row,self.out_col,self.num_kernels),kernels=self.kernels,activation=echo,stride=self.stride,padding=self.padding,dilation=self.dilation,backp=False,out_row=self.row,out_col=self.col)

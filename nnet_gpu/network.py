@@ -9,7 +9,7 @@ from gc import collect
 import time
 
 
-### TO-DO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
+# TODO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
 
 class Sequential:
     def __init__(self):
@@ -133,8 +133,7 @@ class Sequential:
             sample_loss = self.loss(logits=logits, labels=y_inp).mean() / 10
             vloss = infobeta * sample_loss + (1 - infobeta) * vloss
         end = time.time()
-        print(
-            f"\rValidation Accuracy: {(vacc / lnvx).get():.4f} - val_loss: {vloss.get():.4f} - Time: {end - start:.3f}s")
+        print(f"\rValidation Accuracy: {(vacc / lnvx).get():.4f} - val_loss: {vloss.get():.4f} - Time: {end - start:.3f}s")
 
     def compile(self, optimizer=adam, beta=0.9, loss=cross_entropy_with_logits, learning_rate=0.001):
         self.optimizer = optimizer

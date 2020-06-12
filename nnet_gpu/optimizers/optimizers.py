@@ -3,7 +3,7 @@ import numpy as np
 import cupy as cp
 
 
-### CAN TURN THESE INTO CLASSES
+# TODO - CAN TURN THESE INTO CLASSES
 
 def iterative(sequence, learning_rate=0.01, beta=0):
     for obj in sequence:

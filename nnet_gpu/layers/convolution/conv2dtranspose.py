@@ -29,6 +29,10 @@ class conv2dtranspose(conv2d):										# kernels are flipped of cpu version rn,
 		return sz*stride
 
 	def forward(self,inp,training=True):
+		"""
+		Simply, reverse steps of conv2d.
+		Dot product, then col2im.
+		"""
 		self.inp=inp.transpose(0,3,1,2)
 		#inp[batches,channels,row,col]
 		self.batches,self.channels,self.row,self.col=self.inp.shape
@@ -47,6 +51,19 @@ class conv2dtranspose(conv2d):										# kernels are flipped of cpu version rn,
 		return self.a_out				# a_out[batches,out_row,out_col,num_kernels]
 
 	def backprop(self,grads,layer=1):
+		"""
+		1.) For kernel gradient (self.d_ker):
+				Convolve the saved input as kernel over gradients with stride 1 and dilate the saved input with
+				current stride value and current padding.
+				The channels are treated as batches and batches as channel so it gives the correct kernel gradient shape.
+
+		2.) For input gradient (self.d_inp):
+				Convolution over gradients with self.kernels as kernel. Should give original input shape back.
+				All parameters stride,padding,dilation are same as current.
+
+		3.) For biases gradient :
+				It's just same as gradient. Just reshape and sum/mean it.
+		"""
 		if self.activation != echo:
 			grads*=self.activation(self.z_out,self.a_out,derivative=True)
 		self.d_ker.kernels=self.inp.transpose(0,2,3,1)	# t makes[batches,row,col,channels]
@@ -55,10 +72,9 @@ class conv2dtranspose(conv2d):										# kernels are flipped of cpu version rn,
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w=self.d_ker.forward(grads.transpose(3,1,2,0))	#[channels,row,col,batches]
 		# self.d_c_w/=self.batches		#take mean change over batches
-		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if layer:
 			d_inputs=cp.ascontiguousarray(self.d_inp.forward(grads))
-			assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
+			# assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
 		else:
 			d_inputs=0
 		if self.bias_is_not_0:

@@ -95,6 +95,9 @@ class conv2d(Layer):
 		return (sz + 2*pad - dksz)//stride + 1
 
 	def forward(self,inp,training=True):
+		"""
+		Simple, just do im2col and then dot product.
+		"""
 		inp=cp.ascontiguousarray(inp.transpose(0,3,1,2))
 		self.inp=inp
 		#inp[batches,channels,row,col]
@@ -116,7 +119,7 @@ class conv2d(Layer):
 		grads[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,ksz,ksz,num_kernels),biases[1,num_kernels]
 		1.) For kernel gradient (self.d_ker):
 				Convolve the gradients as kernel over saved input with stride 1 and dilate the gradient with
-				current stride value and same current padding.
+				current stride value and current padding.
 				The channels are treated as batches and batches as channel so it gives the correct kernel gradient shape.
 
 		2.) For input gradient (self.d_inp):

@@ -4,11 +4,11 @@ import cupy as cp
 # Both kernels from chainer. May make more efficient by calculating indices once and reusing them all time,
 # like done in CPU version, instead of having to calculate everytime.
 im2col = cp.ElementwiseKernel(
-	'raw T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
-	'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
-	'int32 dy, int32 dx',
-	'T coled',
-	'''
+    'raw T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
+    'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
+    'int32 dy, int32 dx',
+    'T coled',
+    '''
 		int c0 = i / (kh * kw * out_row * out_col);		// select channel
 		int ky = i / (kw * out_row * out_col) % kh;		// select kernel y
 		int kx = i / (out_row * out_col) % kw;			// select kernel x
@@ -22,14 +22,14 @@ im2col = cp.ElementwiseKernel(
 			coled = 0;						// pad with 0
 		}
 	''',
-	'im2col')
+    'im2col')
 
 col2im = cp.ElementwiseKernel(
-	'raw T coled, int32 row, int32 col, int32 out_row, int32 out_col,'
-	'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
-	'int32 dy, int32 dx',
-	'T inp',
-	'''
+    'raw T coled, int32 row, int32 col, int32 out_row, int32 out_col,'
+    'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
+    'int32 dy, int32 dx',
+    'T inp',
+    '''
 		int c0 = i / (row * col);
 		int y  = i / col % row;
 		int x  = i % col;
@@ -50,8 +50,9 @@ col2im = cp.ElementwiseKernel(
 		}
 		inp = val;
 	''',
-	'col2im')
+    'col2im')
+
 
 class emptyHelper:
-	def __init__(self,shape):
-		self.shape=shape
+    def __init__(self, shape):
+        self.shape = shape

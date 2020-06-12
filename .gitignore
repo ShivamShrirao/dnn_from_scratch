@@ -4,3 +4,4 @@ __pycache__/
 *.nvvp
 mntest*
 .vscode
+.idea

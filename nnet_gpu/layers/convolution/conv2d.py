@@ -21,53 +21,54 @@ class conv2d(Layer):
 			std=0.01,
 			name=None,
 			out_row=None,
-			out_col=None
+			out_col=None,
+			dtype=cp.float32,
+			**kwargs
 			):
 		# input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
-		super().__init__()
-		if input_shape is None:
-			input_shape = self.get_inp_shape()
-		if name is None:
-			self.name = self.__class__.__name__
-		else:
-			self.name = name
-		self.activation = activation
-		self.dtype = cp.float32
-		self.stride = stride
-		self.type = self.__class__.__name__
-		self.input_shape = input_shape
-		self.row, self.col, self.channels = input_shape
-		self.batches = batches
-		self.kernels = kernels
-		self.biases = biases
+		saved_locals = locals()		# save for do_init() function
+		super().__init__(saved_locals)
+
+	def do_init(self, kwargs):
+		self.dtype = kwargs.get('dtype')
+		self.input_shape = kwargs.get('input_shape')
+		if self.input_shape is None:
+			self.input_shape = self.get_inp_shape()
+		self.row, self.col, self.channels = self.input_shape
+		self.activation = kwargs.get('activation')
+		self.stride = kwargs.get('stride')
+		self.batches = kwargs.get('batches')
+		self.kernels = kwargs.get('kernels')
+		self.biases = kwargs.get('biases')
 		if self.kernels is None:
+			kernel_size = kwargs.get('kernel_size')
 			if np.isscalar(kernel_size):
 				self.kernel_size = (kernel_size, kernel_size)
 			else:
 				self.kernel_size = kernel_size
+			num_kernels = kwargs.get('num_kernels')
+			std = kwargs.get('std')
 			self.kernels, self.biases = self.init_kernel_bias(self.channels, self.kernel_size, num_kernels, std=std, dtype=self.dtype)
 		else:
-			self.kernel_size = kernels.shape[1:3]
+			self.kernel_size = self.kernels.shape[1:3]
 		self.weights = self.kernels
 		self.bias_is_not_0 = True
 		if cp.isscalar(self.biases):  # TODO: DO BETTER FIX
 			if self.biases == 0:
 				self.bias_is_not_0 = False
-		self.dilation = dilation
-		self.padding = padding
-		if padding is None:
+		self.dilation = kwargs.get('dilation')
+		self.padding = kwargs.get('padding')
+		if self.padding is None:
 			self.padding = self.cal_padding(self.row, self.kernel_size[0], self.stride[0], self.dilation[0]), self.cal_padding(self.col,
 					self.kernel_size[1], self.stride[1], self.dilation[1])
-		if out_row is None:
+		self.out_row = kwargs.get('out_row')
+		if self.out_row is None:
 			self.out_row = self.cal_outsize(self.row, self.kernel_size[0], self.stride[0], self.padding[0], self.dilation[0])
-		else:
-			self.out_row = out_row
-		if out_col is None:
+		self.out_col = kwargs.get('out_col')
+		if self.out_col is None:
 			self.out_col = self.cal_outsize(self.row, self.kernel_size[1], self.stride[1], self.padding[1], self.dilation[1])
-		else:
-			self.out_col = out_col
 		self.param = (self.kernel_size[0] * self.kernel_size[1] * self.channels + 1) * self.num_kernels
-		if backp:
+		if kwargs.get('backp'):
 			self.backp_stream = stream_maps.get_next_stream()
 			self.grad_event = stream_maps.default_stream.record()
 			self.w_m = cp.zeros_like(self.weights, dtype=self.dtype)
@@ -106,9 +107,9 @@ class conv2d(Layer):
 				out_col=self.col)
 
 	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=cp.float32):
-		weights = std * cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels, dtype=cp.float32) + mean
+		weights = std * cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels, dtype=dtype) + mean
 		# weights/=cp.sqrt(num_inp_channels)
-		bias = std * cp.random.randn(1, num_kernels, dtype=cp.float32) + mean
+		bias = std * cp.random.randn(1, num_kernels, dtype=dtype) + mean
 		return weights.astype(dtype, copy=False), bias.astype(dtype, copy=False)
 
 	def cal_outsize(self, sz, ksz, stride, pad, dilation=1):

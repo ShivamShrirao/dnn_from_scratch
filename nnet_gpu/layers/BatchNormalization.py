@@ -12,13 +12,10 @@ class BatchNormalization(Layer):
 			epsilon=1e-10,
 			name=None
 			):
-		super().__init__()
-		self.dtype = cp.float32
-		self.type = self.__class__.__name__
-		if name is None:
-			self.name = self.__class__.__name__
-		else:
-			self.name = name
+		saved_locals = locals()		# save for do_init() function
+		super().__init__(saved_locals)
+
+	def do_init(self, kwargs):
 		input_shape = self.get_inp_shape()
 		self.shape = (None, *input_shape)
 		self.batches = 1
@@ -32,8 +29,8 @@ class BatchNormalization(Layer):
 		self.w_v = cp.zeros_like(self.weights, dtype=self.dtype)
 		self.b_m = cp.zeros_like(self.biases, dtype=self.dtype)
 		self.b_v = cp.zeros_like(self.biases, dtype=self.dtype)
-		self.epsilon = epsilon
-		self.momentum = momentum
+		self.epsilon = kwargs.get('epsilon')
+		self.momentum = kwargs.get('momentum')
 		self.moving_mean = None
 		self.moving_var = None
 		self.param = 4 * input_shape[-1]

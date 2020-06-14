@@ -14,19 +14,19 @@ class max_pool(Layer):
 			name=None
 			):
 		# inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
-		super().__init__()
-		self.ksz = ksize[0]
+		saved_locals = locals()		# save for do_init() function
+		super().__init__(saved_locals)
+
+	def do_init(self, kwargs):
+		self.ksz = kwargs.get('ksize')[0]
 		self.param = 0
 		self.dtype = cp.float32
 		self.type = self.__class__.__name__
-		if name is None:
-			self.name = self.__class__.__name__
-		else:
-			self.name = name
-		if input_shape is None:
-			input_shape = self.get_inp_shape()
+		self.input_shape = kwargs.get('input_shape')
+		if self.input_shape is None:
+			self.input_shape = self.get_inp_shape()
 		self.batches = 1
-		self.row, self.col, self.channels = input_shape
+		self.row, self.col, self.channels = self.input_shape
 		# self.rem_col=self.row%self.ksz
 		# if self.rem_col:
 		# 	self.padded=cp.zeros((self.batches,self.row,self.col,self.channels),dtype=self.dtype)

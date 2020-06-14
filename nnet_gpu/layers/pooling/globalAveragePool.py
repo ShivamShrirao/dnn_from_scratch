@@ -8,17 +8,16 @@ class globalAveragePool(Layer):
 			input_shape=None,
 			name=None
 			):
-		super().__init__()
-		self.type = self.__class__.__name__
-		if name is None:
-			self.name = self.__class__.__name__
-		else:
-			self.name = name
-		if input_shape is None:
-			input_shape = self.get_inp_shape()
+		saved_locals = locals()		# save for do_init() function
+		super().__init__(saved_locals)
+
+	def do_init(self, kwargs):
+		self.input_shape = kwargs.get('input_shape')
+		if self.input_shape is None:
+			self.input_shape = self.get_inp_shape()
 		self.param = 0
 		self.batches = 1
-		self.row, self.col, self.channels = input_shape
+		self.row, self.col, self.channels = self.input_shape
 		self.Ncount = self.row * self.col
 		self.shape = (None, self.channels)
 

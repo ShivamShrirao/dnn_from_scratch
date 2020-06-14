@@ -22,11 +22,13 @@ class conv2dtranspose(conv2d):
 			std=0.01,
 			name=None,
 			out_row=None,
-			out_col=None
+			out_col=None,
+			dtype=cp.float32,
+			**kwargs
 			):
-		super().__init__(num_kernels=num_kernels, input_shape=input_shape, kernel_size=kernel_size, kernels=kernels, activation=activation,
-				biases=biases, stride=stride, dilation=dilation, padding=padding, batches=batches, backp=backp, std=std, name=name,
-				out_row=out_row, out_col=out_col)
+		largs = locals()
+		largs.pop('self')
+		super().__init__(**largs)
 
 	def cal_padding(self, sz, ksz, stride, dilation):
 		oht = self.cal_outsize(sz, ksz, stride, 0, dilation)

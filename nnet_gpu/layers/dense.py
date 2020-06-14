@@ -13,20 +13,24 @@ class dense(Layer):
 			activation=echo,
 			mean=0,
 			std=0.01,
-			name=None
+			name=None,
+			dtype=cp.float32,
+			**kwargs
 			):
-		super().__init__()
-		self.dtype = cp.float32
-		self.type = self.__class__.__name__
-		if name is None:
-			self.name = self.__class__.__name__
-		else:
-			self.name = name
-		if input_shape is None:
-			self.input_shape = self.get_inp_shape()[0]
-		else:
-			self.input_shape = input_shape
-		self.activation = activation
+		saved_locals = locals()  # save for do_init() function
+		super().__init__(saved_locals)
+
+	def do_init(self, kwargs):
+		self.dtype = kwargs.get('dtype')
+		self.input_shape = kwargs.get('input_shape')
+		if self.input_shape is None:
+			self.input_shape = self.get_inp_shape()
+		self.activation = kwargs.get('activation')
+		weights = kwargs.get('weights')
+		biases = kwargs.get('biases')
+		std = kwargs.get('std')
+		num_out = kwargs.get('num_out')
+		mean = kwargs.get('mean')
 		if weights is None:
 			self.weights = std * cp.random.randn(self.input_shape, num_out, dtype=self.dtype) + mean
 		# weights/=np.sqrt(self.input_shape)

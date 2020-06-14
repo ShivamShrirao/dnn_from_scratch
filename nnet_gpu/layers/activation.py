@@ -10,17 +10,15 @@ class Activation(Layer):
 			input_shape=None,
 			name=None
 			):
-		super().__init__()
-		self.dtype = cp.float32
-		self.type = self.__class__.__name__
-		if name is None:
-			self.name = self.__class__.__name__
-		else:
-			self.name = name
-		if input_shape is None:
-			input_shape = self.get_inp_shape()
-		self.activation = activation
-		self.shape = (None, *input_shape)
+		saved_locals = locals()		# save for do_init() function
+		super().__init__(saved_locals)
+
+	def do_init(self, kwargs):
+		self.input_shape = kwargs.get('input_shape')
+		if self.input_shape is None:
+			self.input_shape = self.get_inp_shape()
+		self.activation = kwargs.get('activation')
+		self.shape = (None, *self.input_shape)
 		self.param = 0
 		self.not_softmax_cross_entrp = True
 		if self.activation == echo:

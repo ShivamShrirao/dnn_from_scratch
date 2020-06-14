@@ -4,11 +4,26 @@ from .conv2d import *
 
 # TODO: Fix backprop and all, not working right now.
 
-class conv2dtranspose(
-		conv2d):  # kernels are flipped of cpu version rn, CpuKernel = GpuKernel[:,::-1,::-1,:].transpose(3,1,2,0)
-	def __init__(self, num_kernels=0, input_shape=None, kernel_size=0, kernels=None, activation=echo, biases=0,
-			stride=(1, 1), dilation=(1, 1), padding=None, batches=1, backp=True, std=0.01, name=None, out_row=None,
-			out_col=None):
+# kernels are flipped of cpu version rn, CpuKernel = GpuKernel[:,::-1,::-1,:].transpose(3,1,2,0)
+class conv2dtranspose(conv2d):
+	def __init__(
+			self,
+			num_kernels=0,
+			input_shape=None,
+			kernel_size=0,
+			kernels=None,
+			activation=echo,
+			biases=0,
+			stride=(1, 1),
+			dilation=(1, 1),
+			padding=None,
+			batches=1,
+			backp=True,
+			std=0.01,
+			name=None,
+			out_row=None,
+			out_col=None
+			):
 		super().__init__(num_kernels=num_kernels, input_shape=input_shape, kernel_size=kernel_size, kernels=kernels, activation=activation,
 				biases=biases, stride=stride, dilation=dilation, padding=padding, batches=batches, backp=backp, std=std, name=name,
 				out_row=out_row, out_col=out_col)

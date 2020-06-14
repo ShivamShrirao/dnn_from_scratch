@@ -3,7 +3,10 @@ from .base_layer import *
 
 
 class flatten(Layer):
-	def __init__(self, name=None):
+	def __init__(
+			self,
+			name=None
+			):
 		super().__init__()
 		self.type = self.__class__.__name__
 		self.dtype = cp.float32
@@ -26,7 +29,11 @@ class flatten(Layer):
 
 
 class reshape(Layer):
-	def __init__(self, target_shape, name=None):
+	def __init__(
+			self,
+			target_shape,
+			name=None
+			):
 		super().__init__()
 		self.type = self.__class__.__name__
 		self.dtype = cp.float32

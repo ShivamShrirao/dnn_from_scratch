@@ -6,7 +6,12 @@ from ..stream_handler import stream_maps
 # TODO: Convert operations to gpu kernel
 
 class BatchNormalization(Layer):
-	def __init__(self, momentum=0.9, epsilon=1e-10, name=None):
+	def __init__(
+			self,
+			momentum=0.9,
+			epsilon=1e-10,
+			name=None
+			):
 		super().__init__()
 		self.dtype = cp.float32
 		self.type = self.__class__.__name__

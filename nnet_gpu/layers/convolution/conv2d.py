@@ -5,8 +5,24 @@ from .conv_utils import *
 
 
 class conv2d(Layer):
-	def __init__(self, num_kernels=0, input_shape=None, kernel_size=0, kernels=None, activation=echo, biases=0, stride=(1, 1),
-			dilation=(1, 1), padding=None, batches=1, backp=True, std=0.01, name=None, out_row=None, out_col=None):
+	def __init__(
+			self,
+			num_kernels=0,
+			input_shape=None,
+			kernel_size=0,
+			kernels=None,
+			activation=echo,
+			biases=0,
+			stride=(1, 1),
+			dilation=(1, 1),
+			padding=None,
+			batches=1,
+			backp=True,
+			std=0.01,
+			name=None,
+			out_row=None,
+			out_col=None
+			):
 		# input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
 		super().__init__()
 		if input_shape is None:

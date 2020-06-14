@@ -4,8 +4,17 @@ from ..stream_handler import stream_maps
 
 
 class dense(Layer):
-	def __init__(self, num_out, input_shape=None, weights=None, biases=None, activation=echo, mean=0, std=0.01,
-			name=None):
+	def __init__(
+			self,
+			num_out,
+			input_shape=None,
+			weights=None,
+			biases=None,
+			activation=echo,
+			mean=0,
+			std=0.01,
+			name=None
+			):
 		super().__init__()
 		self.dtype = cp.float32
 		self.type = self.__class__.__name__

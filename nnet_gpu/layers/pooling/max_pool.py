@@ -6,7 +6,13 @@ from ...stream_handler import stream_maps
 # TODO: Convert operations to gpu kernel
 
 class max_pool(Layer):
-	def __init__(self, input_shape=None, ksize=(2, 2), stride=(2, 2), name=None):
+	def __init__(
+			self,
+			input_shape=None,
+			ksize=(2, 2),
+			stride=(2, 2),
+			name=None
+			):
 		# inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
 		super().__init__()
 		self.ksz = ksize[0]

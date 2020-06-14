@@ -3,7 +3,11 @@ from .max_pool import *
 
 
 class globalAveragePool(Layer):
-	def __init__(self, input_shape=None, name=None):
+	def __init__(
+			self,
+			input_shape=None,
+			name=None
+			):
 		super().__init__()
 		self.type = self.__class__.__name__
 		if name is None:

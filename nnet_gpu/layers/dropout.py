@@ -3,7 +3,11 @@ from .base_layer import *
 
 
 class dropout(Layer):
-	def __init__(self, rate=0.2, name=None):  # rate = amount to drop
+	def __init__(
+			self,
+			rate=0.2,
+			name=None
+			):	# rate = amount to drop
 		super().__init__()
 		self.dtype = cp.float32
 		self.type = self.__class__.__name__

@@ -4,7 +4,12 @@ from ..stream_handler import stream_maps
 
 
 class Activation(Layer):
-	def __init__(self, activation=echo, input_shape=None, name=None):
+	def __init__(
+			self,
+			activation=echo,
+			input_shape=None,
+			name=None
+			):
 		super().__init__()
 		self.dtype = cp.float32
 		self.type = self.__class__.__name__

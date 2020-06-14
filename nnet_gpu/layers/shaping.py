@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from .base_layer import *
-from . import seqinst
 
 
 class flatten(Layer):
@@ -12,7 +11,7 @@ class flatten(Layer):
 			self.name = self.__class__.__name__
 		else:
 			self.name = name
-		input_shape = seqinst.seq_instance.get_inp_shape()
+		input_shape = self.get_inp_shape()
 		self.r, self.c, self.channels = input_shape
 		self.fsz = self.r * self.c * self.channels
 		self.shape = (None, self.fsz)
@@ -35,7 +34,7 @@ class reshape(Layer):
 			self.name = self.__class__.__name__
 		else:
 			self.name = name
-		self.input_shape = seqinst.seq_instance.get_inp_shape()
+		self.input_shape = self.get_inp_shape()
 		self.target_shape = target_shape
 		tt = 1
 		for i in self.input_shape:

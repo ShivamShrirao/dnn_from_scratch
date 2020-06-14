@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from ..base_layer import *
-from .. import seqinst
 from ...stream_handler import stream_maps
 from .conv_utils import *
 
@@ -11,7 +10,7 @@ class conv2d(Layer):
 		# input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
 		super().__init__()
 		if input_shape is None:
-			input_shape = seqinst.seq_instance.get_inp_shape()
+			input_shape = self.get_inp_shape()
 		if name is None:
 			self.name = self.__class__.__name__
 		else:
@@ -35,7 +34,7 @@ class conv2d(Layer):
 			self.kernel_size = kernels.shape[1:3]
 		self.weights = self.kernels
 		self.bias_is_not_0 = True
-		if cp.isscalar(self.biases):  # DO BETTER FIX
+		if cp.isscalar(self.biases):  # TODO: DO BETTER FIX
 			if self.biases == 0:
 				self.bias_is_not_0 = False
 		self.dilation = dilation

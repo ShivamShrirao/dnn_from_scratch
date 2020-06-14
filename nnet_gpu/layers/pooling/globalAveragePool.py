@@ -11,7 +11,7 @@ class globalAveragePool(Layer):
 		else:
 			self.name = name
 		if input_shape is None:
-			input_shape = seqinst.seq_instance.get_inp_shape()
+			input_shape = self.get_inp_shape()
 		self.param = 0
 		self.batches = 1
 		self.row, self.col, self.channels = input_shape

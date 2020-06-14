@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from .base_layer import *
-from . import seqinst
 
 
 class upsampling(Layer):
@@ -16,7 +15,7 @@ class upsampling(Layer):
 		else:
 			self.name = name
 		if input_shape is None:
-			input_shape = seqinst.seq_instance.get_inp_shape()
+			input_shape = self.get_inp_shape()
 		self.batches = 1
 		self.row, self.col, self.channels = input_shape
 		self.out_row, self.out_col = self.row * self.ksz, self.col * self.ksz

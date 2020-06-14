@@ -82,7 +82,7 @@ class conv2dtranspose(
 		with self.backp_stream:
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w = self.d_ker.forward(grads.transpose(3, 1, 2, 0))  # [channels,row,col,batches]
-		# self.d_c_w/=self.batches		#take mean change over batches
+		# self.d_c_w/=self.batches		# take mean change over batches
 		if layer:
 			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
 		# assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"

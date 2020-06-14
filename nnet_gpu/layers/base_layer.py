@@ -2,7 +2,6 @@
 from ..functions import *
 import numpy as np
 import cupy as cp
-from . import seqinst
 
 
 class Layer:
@@ -23,6 +22,9 @@ class Layer:
 		self.input_layer = lyr
 		lyr.output_layers.append(self)
 		return self
+
+	def get_inp_shape(self):
+		return self.input_layer.shape[1:]
 
 
 class InputLayer(Layer):  # just placeholder

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from .base_layer import *
-from . import seqinst
 from ..stream_handler import stream_maps
 
 
@@ -15,7 +14,7 @@ class dense(Layer):
 		else:
 			self.name = name
 		if input_shape is None:
-			self.input_shape = seqinst.seq_instance.get_inp_shape()[0]
+			self.input_shape = self.get_inp_shape()[0]
 		else:
 			self.input_shape = input_shape
 		self.activation = activation

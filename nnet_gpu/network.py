@@ -3,6 +3,7 @@ from . import layers
 from .functions import *
 from .optimizers import *
 from .stream_handler import stream_maps
+from .layers import Layer
 
 import pickle
 from gc import collect
@@ -11,9 +12,9 @@ import time
 
 # TODO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
 
-class Sequential:
+class Sequential(Layer):
 	def __init__(self):
-		layers.seqinst.seq_instance = self
+		super().__init__()
 		self.sequence = []
 		self.learning_rate = 0.001
 		self.dtype = cp.float32
@@ -22,9 +23,6 @@ class Sequential:
 		if len(self.sequence) > 0:
 			obj(self.sequence[-1])
 		self.sequence.append(obj)
-
-	def get_inp_shape(self):
-		return self.sequence[-1].shape[1:]
 
 	def forward(self, X_inp, training=True):
 		for obj in self.sequence:
@@ -61,7 +59,7 @@ class Sequential:
 		sam_time = 0
 		for epch in range(epochs):
 			print("EPOCH:", epch + 1, "/", epochs)
-			if iterator == None:
+			if iterator is None:
 				if shuffle:
 					s = cp.random.permutation(lnxinp).astype(cp.int32, copy=False)
 					X_inp = X_inp[s]

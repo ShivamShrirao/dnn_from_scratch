@@ -19,13 +19,14 @@ class Layer:
 		self.output_layers = []
 		self.bias_is_not_0 = True
 		self.saved_parameters = saved_locals
-		self.saved_parameters.pop('self')
-		name = self.saved_parameters.get('name')
-		if name is not None:
-			self.name = name
-		if self.saved_parameters.get('input_shape') is not None:
-			self.do_init(self.saved_parameters)
-			self.init_done = True
+		if self.saved_parameters is not None:
+			self.saved_parameters.pop('self')
+			name = self.saved_parameters.get('name')
+			if name is not None:
+				self.name = name
+			if self.saved_parameters.get('input_shape') is not None:
+				self.do_init(self.saved_parameters)
+				self.init_done = True
 
 	def do_init(self, kwargs):
 		"""
@@ -52,7 +53,7 @@ class Layer:
 
 class InputLayer(Layer):  # just placeholder
 	def __init__(self, shape=None):
-		super().__init__()
+		super().__init__(None)
 		try:
 			self.shape = (None, *shape)
 		except:

@@ -14,7 +14,7 @@ import time
 
 class Sequential(Layer):
 	def __init__(self):
-		super().__init__()
+		super().__init__(None)
 		self.sequence = []
 		self.learning_rate = 0.001
 		self.dtype = cp.float32

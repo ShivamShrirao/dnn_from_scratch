@@ -24,7 +24,7 @@ class dense(Layer):
 		self.dtype = kwargs.get('dtype')
 		self.input_shape = kwargs.get('input_shape')
 		if self.input_shape is None:
-			self.input_shape = self.get_inp_shape()
+			self.input_shape = self.get_inp_shape()[0]		# Just the flat number of inputs
 		self.activation = kwargs.get('activation')
 		weights = kwargs.get('weights')
 		biases = kwargs.get('biases')

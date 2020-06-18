@@ -21,7 +21,7 @@ class flatten(Layer):
 	def forward(self, inp, training=True):
 		return inp.reshape(-1, self.fsz)
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		return grads.reshape(-1, self.r, self.c, self.channels)
 
 
@@ -51,5 +51,5 @@ class reshape(Layer):
 	def forward(self, inp, training=True):
 		return inp.reshape(-1, *self.target_shape)
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		return grads.reshape(-1, *self.input_shape)

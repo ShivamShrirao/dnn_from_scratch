@@ -84,7 +84,7 @@ class BatchNormalization(Layer):
 			# self.xnorm=(inp-self.moving_mean)/cp.sqrt(self.moving_var+self.epsilon)
 		return self.xnorm * self.weights + self.biases
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		# grads(batches,row,col,channels), xmu(batches,row,col,channels)=inp-mean
 		batches = self.inp_shape[0]
 		if batches != self.batches:

@@ -5,6 +5,9 @@ from .conv_utils import *
 
 
 class conv2d(Layer):
+	"""
+	2 Dimensional convolution (cross correlation).
+	"""
 	def __init__(
 			self,
 			num_kernels=0,
@@ -26,7 +29,7 @@ class conv2d(Layer):
 			**kwargs
 			):
 		# input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
-		saved_locals = locals()		# save for do_init() function
+		saved_locals = locals()  # save for do_init() function
 		super().__init__(saved_locals)
 
 	def do_init(self, kwargs):
@@ -59,14 +62,14 @@ class conv2d(Layer):
 		self.dilation = kwargs.get('dilation')
 		self.padding = kwargs.get('padding')
 		if self.padding is None:
-			self.padding = self.cal_padding(self.row, self.kernel_size[0], self.stride[0], self.dilation[0]), self.cal_padding(self.col,
-					self.kernel_size[1], self.stride[1], self.dilation[1])
+			self.padding = self.cal_padding(self.row, self.kernel_size[0], self.stride[0], self.dilation[0]), \
+						   self.cal_padding(self.col, self.kernel_size[1], self.stride[1], self.dilation[1])
 		self.out_row = kwargs.get('out_row')
 		if self.out_row is None:
 			self.out_row = self.cal_outsize(self.row, self.kernel_size[0], self.stride[0], self.padding[0], self.dilation[0])
 		self.out_col = kwargs.get('out_col')
 		if self.out_col is None:
-			self.out_col = self.cal_outsize(self.row, self.kernel_size[1], self.stride[1], self.padding[1], self.dilation[1])
+			self.out_col = self.cal_outsize(self.col, self.kernel_size[1], self.stride[1], self.padding[1], self.dilation[1])
 		self.param = (self.kernel_size[0] * self.kernel_size[1] * self.channels + 1) * self.num_kernels
 		if kwargs.get('backp'):
 			self.backp_stream = stream_maps.get_next_stream()
@@ -118,14 +121,13 @@ class conv2d(Layer):
 
 	def forward(self, inp, training=True):
 		"""
-		Simple, just do im2col and then dot product.
+		Simple implementation, just do im2col and then dot product.
 		"""
 		inp = cp.ascontiguousarray(inp.transpose(0, 3, 1, 2))
 		self.inp = inp
 		# inp[batches,channels,row,col]
 		self.batches, self.channels, self.row, self.col = self.inp.shape
-		coled = cp.empty(
-				(self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col),
+		coled = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col),
 				dtype=self.dtype)
 		im2col(self.inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0],
@@ -135,13 +137,14 @@ class conv2d(Layer):
 		self.z_out = cp.tensordot(coled, self.kernels, ((1, 2, 3), (0, 1, 2)))
 		if self.bias_is_not_0:
 			self.z_out = cp.add(self.z_out, self.biases)
-		assert self.z_out.shape == (self.batches, self.out_row, self.out_col, self.num_kernels)
+		# assert self.z_out.shape == (self.batches, self.out_row, self.out_col, self.num_kernels)
 		self.a_out = self.activation(self.z_out)
 		return self.a_out  # a_out[self.batches,self.out_row,self.out_col,self.num_kernels]
 
-	def backprop(self, grads, layer=1):  # strides[batch,row,col,depth]
+	def backprop(self, grads, do_d_inp=True):
 		"""
 		grads[batches,esz,esz,num_kernels],inp[batches,channels,row,col],kernels(channels,ksz,ksz,num_kernels),biases[1,num_kernels]
+
 		1.) For kernel gradient (self.d_ker):
 				Convolve the gradients as kernel over saved input with stride 1 and dilate the gradient with
 				current stride value and current padding.
@@ -165,7 +168,7 @@ class conv2d(Layer):
 			self.d_c_w = self.d_ker.forward(self.inp.transpose(1, 2, 3, 0))  # [channels,row,col,batches]
 		# self.d_c_w/=self.batches		#take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
-		if layer:
+		if do_d_inp:
 			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
 		# assert d_inputs.shape == (self.batches, self.row, self.col, self.channels), f"{(self.batches, self.row, self.col, self.channels)},{d_inputs.shape}"
 		else:

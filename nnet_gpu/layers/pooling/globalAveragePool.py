@@ -28,7 +28,7 @@ class globalAveragePool(Layer):
 		output = inp.mean(axis=1)
 		return output.reshape(self.batches, self.channels)
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		# grads/=self.Ncount
 		z_out = grads.repeat(self.Ncount, axis=0).reshape(self.batches, self.row, self.col, self.channels)
 		return z_out

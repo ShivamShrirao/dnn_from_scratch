@@ -31,7 +31,7 @@ class Activation(Layer):
 		self.a_out = self.activation(self.z_out)
 		return self.a_out
 
-	def backprop(self, grads, layer=1):
-		if self.notEcho and self.not_softmax_cross_entrp:
+	def backprop(self, grads, do_d_inp=True):
+		if self.notEcho and self.not_softmax_cross_entrp:		# TODO: Use proper checks.
 			grads *= self.activation(self.z_out, self.a_out, derivative=True)
 		return grads

@@ -78,7 +78,7 @@ class conv2dtranspose(conv2d):
 		self.a_out = self.activation(self.z_out)
 		return self.a_out  # a_out[batches,out_row,out_col,num_kernels]
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		"""
 		1.) For kernel gradient (self.d_ker):
 				Convolve the saved input as kernel over gradients with stride 1 and dilate the saved input with
@@ -100,7 +100,7 @@ class conv2dtranspose(conv2d):
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w = self.d_ker.forward(grads.transpose(3, 1, 2, 0))  # [channels,row,col,batches]
 		# self.d_c_w/=self.batches		# take mean change over batches
-		if layer:
+		if do_d_inp:
 			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
 		# assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
 		else:

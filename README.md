@@ -199,6 +199,7 @@ Layer 1
 ## TO-DO
 
 * RNN and LSTM.
+* Translate weights to be used by different libraries.
 * Write proper tests.
 * Auto Differentiation.
 * Mixed precision training.

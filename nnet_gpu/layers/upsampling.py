@@ -30,7 +30,7 @@ class upsampling(Layer):
 		self.input_shape = inp.shape
 		return inp.repeat(2, axis=2).repeat(2, axis=1)
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		# grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
 		grads = grads.reshape(self.input_shape[0], self.row, self.ksz, self.col, self.ksz, self.channels)
 		return grads.sum(axis=(2, 4), keepdims=True).reshape(self.input_shape)

@@ -31,7 +31,7 @@ class Sequential:
 
 	def backprop(self, err, i):
 		for obj in self.sequence[::-1]:
-			err = obj.backprop(err, layer=i)
+			err = obj.backprop(err, do_d_inp=i)
 			i -= 1
 		return err
 

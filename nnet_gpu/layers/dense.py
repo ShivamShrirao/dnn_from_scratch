@@ -67,14 +67,14 @@ class dense(Layer):
 		self.a_out = self.activation(self.z_out)
 		return self.a_out
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		if self.notEcho and self.not_softmax_cross_entrp:  # make it better in future
 			grads *= self.activation(self.z_out, self.a_out, derivative=True)
 		self.grad_event = stream_maps.default_stream.record(self.grad_event)
 		with self.backp_stream:
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w = self.inp.T.dot(grads)  # /self.inp.shape[0]
-		if layer:
+		if do_d_inp:
 			d_c_a = grads.dot(self.weights.T)
 		else:
 			d_c_a = 0

@@ -11,13 +11,13 @@ import time
 
 
 # TODO- In train/fit unifunc, transpose whole data of inp at once and remove from layers.
+# TODO - Divide the file up maybe. More readable.
 
 class Sequential(Layer):
 	def __init__(self):
 		super().__init__(None)
 		self.sequence = []
 		self.learning_rate = 0.001
-		self.dtype = cp.float32
 
 	def add(self, obj):
 		if len(self.sequence) > 0:
@@ -29,10 +29,13 @@ class Sequential(Layer):
 			X_inp = obj.forward(X_inp, training=training)
 		return X_inp
 
-	def backprop(self, grads, i):
+	def backprop(self, grads, do_d_inp=False):
 		for obj in self.sequence[::-1]:
-			grads = obj.backprop(grads, layer=i)
-			i -= 1
+			if do_d_inp:
+				do_flag = True
+			else:
+				do_flag = obj.input_layer is not None
+			grads = obj.backprop(grads, do_d_inp=do_flag)
 		return grads
 
 	def predict(self, X_inp):
@@ -41,14 +44,14 @@ class Sequential(Layer):
 	def train_on_batch(self, X_inp, labels):
 		X_inp = self.forward(X_inp.astype(self.dtype, copy=False))
 		grads = self.del_loss(X_inp, labels.astype(self.dtype, copy=False))
-		self.backprop(grads, self.lenseq_m1)
+		self.backprop(grads, do_d_inp=False)		# The gradients with input layer will NOT be calculated.
 		self.optimizer(self.sequence, self.learning_rate, self.beta)
 		return X_inp
 
 	def not_train_on_batch(self, X_inp, labels):
 		X_inp = self.forward(X_inp.astype(self.dtype, copy=False))
 		grads = self.del_loss(X_inp, labels.astype(self.dtype, copy=False))
-		grads = self.backprop(grads, self.lenseq_m1 + 1)
+		grads = self.backprop(grads, do_d_inp=True)	# Gradients with input layer will be calculated.
 		return X_inp, grads
 
 	def fit(self, X_inp=None, labels=None, iterator=None, batch_size=1, epochs=1, validation_data=None, shuffle=True, accuracy_metric=True,

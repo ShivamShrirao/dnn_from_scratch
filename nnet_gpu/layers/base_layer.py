@@ -6,7 +6,7 @@ import cupy as cp
 
 class Layer:
 	"""
-	The base layer. All layers are derived from it.
+	The base do_d_inp. All layers are derived from it.
 	"""
 	saved_parameters = None
 	init_done = False
@@ -54,10 +54,16 @@ class Layer:
 	def get_inp_shape(self):
 		return self.input_layer.shape[1:]
 
+	def forward(self, inp, training=True):
+		pass
+
+	def backprop(self, grads, do_d_inp=True):
+		pass
+
 
 class InputLayer(Layer):
 	"""
-	Just placeholder for input layer.
+	Just placeholder for input do_d_inp.
 	"""
 	def __init__(self, shape=None):
 		super().__init__(None)

@@ -53,7 +53,7 @@ class max_pool(Layer):
 			self.mask = (inp == output)
 		return output.reshape(self.batches, self.out_row, self.out_col, self.channels)
 
-	def backprop(self, grads, layer=1):
+	def backprop(self, grads, do_d_inp=True):
 		# grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
 		z_out = (self.mask * grads.reshape(self.batches, self.out_row, 1, self.out_col, 1, self.channels))
 		# if self.rem_col:

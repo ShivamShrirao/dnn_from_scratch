@@ -201,8 +201,8 @@ Layer 1
 * RNN and LSTM.
 * Write proper tests.
 * Auto Differentiation.
-* GPU support.
-* Fix loading and saving weights for training.
+* Mixed precision training.
+* Multi GPU support. (It still can be done with cupy, just needs proper wrappers)
 * Start a server process for visualizing graphs while training.
 * Comments.
 * Lots of performance and memory improvement.

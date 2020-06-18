@@ -5,8 +5,16 @@ import cupy as cp
 
 
 class Layer:
+	"""
+	The base layer. All layers are derived from it.
+	"""
 	saved_parameters = None
 	init_done = False
+	shape = (None, None)
+	input_layer = None
+	input_shape = None
+	output_layers = []
+	bias_is_not_0 = True
 
 	def __init__(self, saved_locals):
 		self.name = self.__class__.__name__
@@ -14,10 +22,6 @@ class Layer:
 		self.dtype = cp.float32
 		self.param = 0
 		self.activation = echo
-		self.input_layer = None
-		self.input_shape = None
-		self.output_layers = []
-		self.bias_is_not_0 = True
 		self.saved_parameters = saved_locals
 		if self.saved_parameters is not None:
 			self.saved_parameters.pop('self')
@@ -51,10 +55,13 @@ class Layer:
 		return self.input_layer.shape[1:]
 
 
-class InputLayer(Layer):  # just placeholder
+class InputLayer(Layer):
+	"""
+	Just placeholder for input layer.
+	"""
 	def __init__(self, shape=None):
 		super().__init__(None)
 		try:
 			self.shape = (None, *shape)
-		except:
+		except TypeError:
 			self.shape = (None, shape)

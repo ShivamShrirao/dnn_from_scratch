@@ -5,18 +5,24 @@ Just made to learn deep working and backpropogation of CNNs and various machine 
 
 ## Usage
 
-Functions are very much like keras. Check Jupyter notebooks for implementation.
+Check Examples and Implementations below.
 
-GAN implementation in this library: https://github.com/ShivamShrirao/GANs_from_scratch
+Descriptions                          |     Repository Link
+:------------------------------------:|:-------------------------------:
+Basic CNNs and ANNs on CIFAR,MNIST... | https://github.com/ShivamShrirao/dnn_scratch_basic_implementations
+:------------------------------------:|:-------------------------------:
+Basic GANs                            | https://github.com/ShivamShrirao/GANs_from_scratch
+
 
 ### Import modules
 
 ```python
-from nnet.network import Sequential
-from nnet.layers import conv2d,max_pool,flatten,dense,dropout,BatchNormalization
-from nnet import optimizers
-from nnet import functions
+from nnet_gpu.network import Sequential
+from nnet_gpu.layers import Conv2D,MaxPool,Flatten,Dense,Dropout,BatchNormalization,GlobalAveragePool
+from nnet_gpu import optimizers
+from nnet_gpu import functions
 import numpy as np
+import cupy as cp
 ```
 
 ### Make Sequential Model
@@ -24,24 +30,28 @@ import numpy as np
 Add each layer to the Sequential model with parameters.
 
 ```python
-model = Sequential()
+model=Sequential()
 
-model.add(conv2d(num_kernels=32,kernel_size=3,activation=functions.relu,input_shape=(32,32,3)))
-model.add(conv2d(num_kernels=32,kernel_size=3,activation=functions.relu))
+model.add(Conv2D(num_kernels=32,kernel_size=3,activation=functions.relu,input_shape=(32,32,3)))
+model.add(Conv2D(num_kernels=32,kernel_size=3,stride=(2,2),activation=functions.relu))
 model.add(BatchNormalization())
-model.add(max_pool())
-model.add(dropout(0.1))
-model.add(conv2d(num_kernels=64,kernel_size=3,activation=functions.relu))
-model.add(conv2d(num_kernels=64,kernel_size=3,activation=functions.relu))
+# model.add(MaxPool())
+model.add(Dropout(0.1))
+model.add(Conv2D(num_kernels=64,kernel_size=3,activation=functions.relu))
+model.add(Conv2D(num_kernels=64,kernel_size=3,stride=(2,2),activation=functions.relu))
 model.add(BatchNormalization())
-model.add(max_pool())
-model.add(dropout(0.2))
-model.add(conv2d(num_kernels=128,kernel_size=3,activation=functions.relu))
-model.add(conv2d(num_kernels=128,kernel_size=3,activation=functions.relu))
+# model.add(MaxPool())
+model.add(Dropout(0.2))
+model.add(Conv2D(num_kernels=128,kernel_size=3,activation=functions.relu))
+model.add(Conv2D(num_kernels=128,kernel_size=3,stride=(2,2),activation=functions.relu))
 model.add(BatchNormalization())
-model.add(globalAveragePool())
-model.add(dropout(0.3))
-model.add(dense(10,activation=functions.softmax))
+# model.add(GlobalAveragePool())
+# model.add(MaxPool())
+model.add(Dropout(0.3))
+model.add(Flatten())
+model.add(Dense(128,activation=functions.relu))
+model.add(BatchNormalization())
+model.add(Dense(10,activation=functions.softmax))
 ```
 
 ### View Model Summary
@@ -56,43 +66,43 @@ model.summary()
 ⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽⎽
 Layer (type)               Output Shape             Activation        Param #
 ==========================================================================================
-- input_layer(InputLayer) (None, 32, 32, 3)          echo             0
+- InputLayer(InputLayer)  (None, 32, 32, 3)          echo             0
 __________________________________________________________________________________________
-0 conv2d(conv2d)          (None, 32, 32, 32)         relu             896
+0 Conv2D(Conv2D)          (None, 32, 32, 32)         relu             896
 __________________________________________________________________________________________
-1 conv2d(conv2d)          (None, 32, 32, 32)         relu             9248
+1 Conv2D(Conv2D)          (None, 16, 16, 32)         relu             9248
 __________________________________________________________________________________________
-2 BatchNormalization(Batc (None, 32, 32, 32)         echo             128
+2 BatchNormalization(Batc (None, 16, 16, 32)         echo             128
 __________________________________________________________________________________________
-3 max_pool(max_pool)      (None, 16, 16, 32)         echo             0
+3 Dropout(Dropout)        (None, 16, 16, 32)         echo             0
 __________________________________________________________________________________________
-4 dropout(dropout)        (None, 16, 16, 32)         echo             0
+4 Conv2D(Conv2D)          (None, 16, 16, 64)         relu             18496
 __________________________________________________________________________________________
-5 conv2d(conv2d)          (None, 16, 16, 64)         relu             18496
+5 Conv2D(Conv2D)          (None, 8, 8, 64)           relu             36928
 __________________________________________________________________________________________
-6 conv2d(conv2d)          (None, 16, 16, 64)         relu             36928
+6 BatchNormalization(Batc (None, 8, 8, 64)           echo             256
 __________________________________________________________________________________________
-7 BatchNormalization(Batc (None, 16, 16, 64)         echo             256
+7 Dropout(Dropout)        (None, 8, 8, 64)           echo             0
 __________________________________________________________________________________________
-8 max_pool(max_pool)      (None, 8, 8, 64)           echo             0
+8 Conv2D(Conv2D)          (None, 8, 8, 128)          relu             73856
 __________________________________________________________________________________________
-9 dropout(dropout)        (None, 8, 8, 64)           echo             0
+9 Conv2D(Conv2D)          (None, 4, 4, 128)          relu             147584
 __________________________________________________________________________________________
-10 conv2d(conv2d)         (None, 8, 8, 128)          relu             73856
+10 BatchNormalization(Bat (None, 4, 4, 128)          echo             512
 __________________________________________________________________________________________
-11 conv2d(conv2d)         (None, 8, 8, 128)          relu             147584
+11 Dropout(Dropout)       (None, 4, 4, 128)          echo             0
 __________________________________________________________________________________________
-12 BatchNormalization(Bat (None, 8, 8, 128)          echo             512
+12 Flatten(Flatten)       (None, 2048)               echo             0
 __________________________________________________________________________________________
-13 globalAveragePool(glob (None, 128)                echo             0
+13 Dense(Dense)           (None, 128)                relu             262272
 __________________________________________________________________________________________
-14 dropout(dropout)       (None, 128)                echo             0
+14 BatchNormalization(Bat (None, 128)                echo             512
 __________________________________________________________________________________________
-15 dense(dense)           (None, 10)                 softmax          1290
+15 Dense(Dense)           (None, 10)                 softmax          1290
 ==========================================================================================
-Total Params: 289,194
-Trainable Params: 288,746
-Non-trainable Params: 448
+Total Params: 551,978
+Trainable Params: 551,274
+Non-trainable Params: 704
 ```
 
 ### Compile model with optimizer, loss and Learning rate
@@ -101,31 +111,31 @@ Non-trainable Params: 448
 model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits,learning_rate=0.001)
 ```
 
-### Optimizers avaliable	(nnet.optimizers)
+### Optimizers avaliable    (nnet.optimizers)
 
-* Iterative			(optimizers.iterative)
+* Iterative         (optimizers.iterative)
 * SGD with Momentum (optimizers.momentum)
-* Rmsprop			(optimizers.rmsprop)
-* Adagrad			(optimizers.adagrad)
-* Adam				(optimizers.adam)
-* Adamax			(optimizers.adamax)
-* Adadelta			(optimizers.adadelta)
+* Rmsprop           (optimizers.rmsprop)
+* Adagrad           (optimizers.adagrad)
+* Adam              (optimizers.adam)
+* Adamax            (optimizers.adamax)
+* Adadelta          (optimizers.adadelta)
 
-### Layers avaliable		(nnet.layers)
+### Layers avaliable        (nnet.layers)
 
-* conv2d
-* conv2dtranspose
-* max_pool
-* upsampling
-* flatten
-* reshape
-* dense				(Fully connected layer)
-* dropout
+* Conv2D
+* Conv2Dtranspose
+* MaxPool
+* Upsampling
+* Flatten
+* Reshape
+* Dense             (Fully connected layer)
+* Dropout
 * BatchNormalization
 * Activation
-* InputLayer		(just placeholder)
+* InputLayer        (just placeholder)
 
-### Loss functions avaliable	(nnet.functions)
+### Loss functions avaliable    (nnet.functions)
 
 * functions.cross_entropy_with_logits
 * functions.mean_squared_error
@@ -173,9 +183,9 @@ model.load_weights("file.dump")
 ```
 
 ## Training graph
-Accuracy						 |				Loss
+Accuracy                         |              Loss
 :-------------------------------:|:-------------------------------:
-![accuracy](/pics/accuracy.png)	 |	![loss](/pics/loss.png)
+![accuracy](/pics/accuracy.png)  |  ![loss](/pics/loss.png)
 
 ## Localization Heatmaps
 What the CNN sees

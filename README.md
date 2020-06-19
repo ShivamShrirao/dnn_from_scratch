@@ -1,6 +1,6 @@
 # Deep Learning Library from scratch
 
-A keras like Convolutional Neural Network library made from scratch (just using numpy). Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
+A High Level Deep Learning library made from scratch (just using numpy/cupy). Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
 Just made to learn deep working and backpropogation of CNNs and various machine learning algorithms. Deriving and making it gave alot of insight to how it all works. Will keep adding new networks and algorithms in future.
 
 ## Usage
@@ -56,7 +56,6 @@ model.add(Dense(10,activation=functions.softmax))
 ### View Model Summary
 
 Shows each layer in a sequence, shape, activations and total, trainable, non-trainable parameters.
-TO-DO-> Show connections.
 
 ```python
 model.summary()

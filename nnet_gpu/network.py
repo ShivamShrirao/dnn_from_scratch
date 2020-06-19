@@ -183,7 +183,7 @@ class Sequential(Layer):
 				obj.kernels = obj.weights
 				idx += 1
 
-	def summary(self):
+	def summary(self):					# TODO - Show connections.
 		ipl = layers.InputLayer(self.sequence[0].input_shape)
 		reps = 90
 		print(chr(9149) * reps)

@@ -5,7 +5,7 @@ from .conv2d import *
 # TODO: Fix backprop and all, not working right now.
 
 # kernels are flipped of cpu version rn, CpuKernel = GpuKernel[:,::-1,::-1,:].transpose(3,1,2,0)
-class conv2dtranspose(conv2d):
+class Conv2Dtranspose(Conv2D):
 	def __init__(
 			self,
 			num_kernels=0,
@@ -46,9 +46,9 @@ class conv2dtranspose(conv2d):
 
 	def init_back(self):
 		inp = emptyHelper((self.batches, self.row, self.col, self.channels))
-		self.d_ker = conv2d(input_shape=(self.row, self.col, self.batches), kernels=inp, activation=echo, stride=(1, 1),
+		self.d_ker = Conv2D(input_shape=(self.row, self.col, self.batches), kernels=inp, activation=echo, stride=(1, 1),
 				dilation=self.stride, padding=self.padding, backp=False, out_row=self.kernel_size[0], out_col=self.kernel_size[1])
-		self.d_inp = conv2d(input_shape=(self.out_row, self.out_col, self.num_kernels), kernels=self.kernels, activation=echo,
+		self.d_inp = Conv2D(input_shape=(self.out_row, self.out_col, self.num_kernels), kernels=self.kernels, activation=echo,
 				stride=self.stride, padding=self.padding, dilation=self.dilation, backp=False, out_row=self.row, out_col=self.col)
 
 	def cal_outsize(self, sz, ksz, stride, pad, dilation=1):
@@ -57,7 +57,7 @@ class conv2dtranspose(conv2d):
 
 	def forward(self, inp, training=True):
 		"""
-		Simply, reverse steps of conv2d.
+		Simply, reverse steps of Conv2D.
 		Dot product, then col2im.
 		"""
 		self.inp = inp.transpose(0, 3, 1, 2)
@@ -90,7 +90,7 @@ class conv2dtranspose(conv2d):
 				All parameters stride,padding,dilation are same as current.
 
 		3.) For biases gradient :
-				It's just same as gradient. Just reshape and sum/mean it.
+				It's just same as gradient. Just Reshape and sum/mean it.
 		"""
 		if self.activation != echo:
 			grads *= self.activation(self.z_out, self.a_out, derivative=True)
@@ -107,6 +107,6 @@ class conv2dtranspose(conv2d):
 			d_inputs = 0
 		if self.bias_is_not_0:
 			with self.backp_stream:
-				self.d_c_b = grads.reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
-		# self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
+				self.d_c_b = grads.Reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
+		# self.d_c_b=grads.Reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs

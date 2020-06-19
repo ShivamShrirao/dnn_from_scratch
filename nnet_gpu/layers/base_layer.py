@@ -6,20 +6,20 @@ import cupy as cp
 
 class Layer:
 	"""
-	The base do_d_inp. All layers are derived from it.
+	The base layer. All layers are derived from it.
 	"""
 	saved_parameters = None
 	init_done = False
 	shape = (None, None)
-	input_layer = None
-	input_shape = None
-	output_layers = []
 	bias_is_not_0 = True
 
 	def __init__(self, saved_locals):
 		self.name = self.__class__.__name__
 		self.type = self.__class__.__name__
 		self.dtype = cp.float32
+		self.input_layer = None
+		self.input_shape = None
+		self.output_layers = []
 		self.param = 0
 		self.activation = echo
 		self.saved_parameters = saved_locals
@@ -35,7 +35,7 @@ class Layer:
 	def do_init(self, kwargs):
 		"""
 		Do all the initialization calculations here.
-		Set self.init_done = True manually after calling.
+		Set self.init_done = True after calling.
 		:param kwargs: self.saved_parameters, passed as parameter cause kwargs smaller in length (readability).
 		"""
 		self.init_done = True
@@ -55,9 +55,21 @@ class Layer:
 		return self.input_layer.shape[1:]
 
 	def forward(self, inp, training=True):
+		"""
+		The forward pass.
+		:param inp: Input to layer.
+		:param training: Specify training or testing mode.(Bool)
+		:return: Layer output.
+		"""
 		pass
 
 	def backprop(self, grads, do_d_inp=True):
+		"""
+		THe Backward pass for backpropagation.
+		:param grads: The Gradients from next layer.
+		:param do_d_inp: To specify if gradients for previous layer are to be calculated or not.(Bool)
+		:return: The gradients for previous layer.
+		"""
 		pass
 
 

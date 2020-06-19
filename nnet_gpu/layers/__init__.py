@@ -4,14 +4,14 @@ from .activation import Activation
 from .base_layer import Layer
 from .base_layer import InputLayer
 from .BatchNormalization import BatchNormalization
-from .convolution.conv2d import conv2d
-from .convolution.conv2dtranspose import conv2dtranspose
-from .dense import dense
-from .dropout import dropout
-from .pooling.max_pool import max_pool
-from .pooling.globalAveragePool import globalAveragePool
-from .shaping import flatten
-from .shaping import reshape
-from .upsampling import upsampling
+from .convolution.conv2d import Conv2D
+from .convolution.conv2dtranspose import Conv2Dtranspose
+from .dense import Dense
+from .dropout import Dropout
+from .pooling.maxpool import MaxPool
+from .pooling.globalAveragePool import GlobalAveragePool
+from .shaping import Flatten
+from .shaping import Reshape
+from .upsampling import Upsampling
 
 import cupyx

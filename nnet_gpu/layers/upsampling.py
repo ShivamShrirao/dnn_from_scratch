@@ -2,7 +2,7 @@
 from .base_layer import *
 
 
-class upsampling(Layer):
+class Upsampling(Layer):
 	def __init__(
 			self,
 			input_shape=None,
@@ -32,5 +32,5 @@ class upsampling(Layer):
 
 	def backprop(self, grads, do_d_inp=True):
 		# grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		grads = grads.reshape(self.input_shape[0], self.row, self.ksz, self.col, self.ksz, self.channels)
-		return grads.sum(axis=(2, 4), keepdims=True).reshape(self.input_shape)
+		grads = grads.Reshape(self.input_shape[0], self.row, self.ksz, self.col, self.ksz, self.channels)
+		return grads.sum(axis=(2, 4), keepdims=True).Reshape(self.input_shape)

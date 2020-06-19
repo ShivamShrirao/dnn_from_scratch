@@ -4,7 +4,7 @@ from ...stream_handler import stream_maps
 from .conv_utils import *
 
 
-class conv2d(Layer):
+class Conv2D(Layer):
 	"""
 	2 Dimensional convolution (cross correlation).
 	"""
@@ -56,7 +56,7 @@ class conv2d(Layer):
 			self.kernel_size = self.kernels.shape[1:3]
 		self.weights = self.kernels
 		self.bias_is_not_0 = True
-		if cp.isscalar(self.biases):  # TODO: DO BETTER FIX
+		if cp.isscalar(self.biases):  # TODO: DO BETTER CHECK
 			if self.biases == 0:
 				self.bias_is_not_0 = False
 		self.dilation = kwargs.get('dilation')
@@ -101,11 +101,11 @@ class conv2d(Layer):
 
 	def init_back(self):
 		global conv2dtranspose
-		from .conv2dtranspose import conv2dtranspose
+		from .conv2dtranspose import Conv2Dtranspose
 		grads = emptyHelper((self.batches, self.out_row, self.out_col, self.num_kernels))
-		self.d_ker = conv2d(input_shape=(self.row, self.col, self.batches), kernels=grads, activation=echo, stride=(1, 1),
+		self.d_ker = Conv2D(input_shape=(self.row, self.col, self.batches), kernels=grads, activation=echo, stride=(1, 1),
 				dilation=self.stride, padding=self.padding, backp=False, out_row=self.kernel_size[0], out_col=self.kernel_size[1])
-		self.d_inp = conv2dtranspose(input_shape=(self.out_row, self.out_col, self.num_kernels), kernels=self.kernels, activation=echo,
+		self.d_inp = Conv2Dtranspose(input_shape=(self.out_row, self.out_col, self.num_kernels), kernels=self.kernels, activation=echo,
 				stride=self.stride, padding=self.padding, dilation=self.dilation, backp=False, out_row=self.row,
 				out_col=self.col)
 
@@ -155,7 +155,7 @@ class conv2d(Layer):
 				All parameters stride,padding,dilation are same as current.
 
 		3.) For biases gradient :
-				It's just same as gradient. Just reshape and sum/mean it.
+				It's just same as gradient. Just Reshape and sum/mean it.
 
 		TODO: Compare difference of sum and mean for bias.
 		"""
@@ -175,6 +175,6 @@ class conv2d(Layer):
 			d_inputs = 0
 		if self.bias_is_not_0:
 			with self.backp_stream:
-				self.d_c_b = grads.reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
-		# self.d_c_b = grads.reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
+				self.d_c_b = grads.Reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
+		# self.d_c_b = grads.Reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
 		return d_inputs

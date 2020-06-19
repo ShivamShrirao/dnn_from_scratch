@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-from .max_pool import *
+from .maxpool import *
 
 
-class globalAveragePool(Layer):
+class GlobalAveragePool(Layer):
 	def __init__(
 			self,
 			input_shape=None,
@@ -24,11 +24,11 @@ class globalAveragePool(Layer):
 	def forward(self, inp, training=True):
 		self.input_shape = inp.shape
 		self.batches = self.input_shape[0]
-		inp = inp.reshape(self.batches, self.Ncount, self.channels)
+		inp = inp.Reshape(self.batches, self.Ncount, self.channels)
 		output = inp.mean(axis=1)
-		return output.reshape(self.batches, self.channels)
+		return output.Reshape(self.batches, self.channels)
 
 	def backprop(self, grads, do_d_inp=True):
 		# grads/=self.Ncount
-		z_out = grads.repeat(self.Ncount, axis=0).reshape(self.batches, self.row, self.col, self.channels)
+		z_out = grads.repeat(self.Ncount, axis=0).Reshape(self.batches, self.row, self.col, self.channels)
 		return z_out

@@ -76,7 +76,7 @@ class conv2d(Layer):
 		else:
 			self.kernel_size = kernels.shape[1]
 			self.num_kernels = kernels.shape[3]
-		self.kern = self.kernels.reshape(-1, self.num_kernels)
+		self.kern = self.kernels.Reshape(-1, self.num_kernels)
 		self.weights = self.kernels
 		self.padding = padding
 		self.dilation = dilation
@@ -113,8 +113,8 @@ class conv2d(Layer):
 		slider = (np.arange(self.out_row * stride[0])[:, None] * self.prow + np.arange(self.out_col * stride[1]))
 		self.ind = window.ravel() + slider[::stride[0], ::stride[1]].ravel()[:, None]
 		self.output = np.empty((self.batches, self.out_row * self.out_col, self.num_kernels), dtype=self.dtype)
-		# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-		self.coled = COLT.alloc(self.ind.size * self.batches, self).reshape(-1, self.channels * self.kernel_size * self.kernel_size)
+		# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).Reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+		self.coled = COLT.alloc(self.ind.size * self.batches, self).Reshape(-1, self.channels * self.kernel_size * self.kernel_size)
 		COLT.free()
 		# bind= np.arange(self.batches)[:,None]*self.channels*self.prow*self.pcol+self.ind.ravel()		#for self.batches
 		self.shape = (None, self.out_row, self.out_col, self.num_kernels)
@@ -173,8 +173,8 @@ class conv2d(Layer):
 				1])).ravel() + np.arange(self.channels)[:, None] * self.prow * self.pcol + self.off_transpose
 			slider = (np.arange(self.out_row * self.stride[0])[:, None] * self.prow + np.arange(self.out_col * self.stride[1]))
 			self.ind = window.ravel() + slider[::self.stride[0], ::self.stride[1]].ravel()[:, None]
-			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).reshape(-1,self.channels*self.kernel_size*self.kernel_size)
-			self.coled = COLT.alloc(self.ind.size * self.batches, self).reshape(-1, self.channels * self.kernel_size * self.kernel_size)
+			# self.coled=np.empty((self.batches,*self.ind.shape),dtype=self.dtype).Reshape(-1,self.channels*self.kernel_size*self.kernel_size)
+			self.coled = COLT.alloc(self.ind.size * self.batches, self).Reshape(-1, self.channels * self.kernel_size * self.kernel_size)
 			COLT.free()
 			if not self.is_not_dker:
 				if self.padding:
@@ -188,12 +188,12 @@ class conv2d(Layer):
 				self.padding:-self.padding:self.dlate[1]] = self.inp  # this takes time. FIX
 			else:
 				self.padded[:, :, ::self.dlate[0], ::self.dlate[1]] = self.inp
-		self.kern = self.kernels.reshape(-1, self.num_kernels)
+		self.kern = self.kernels.Reshape(-1, self.num_kernels)
 		# for i,img in enumerate(self.padded):		#img[self.channels,self.row,self.col]
 		# windows(out_row*out_col, kernel_size*kernel_size*channels) . kernels(channels*kernel_size*kernel_size,num_kernels)
 		# self.output[i]=np.dot(img.take(self.ind), self.kern)
-		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
-		# output=(np.dot(np.take(padded, bind).reshape(-1,self.channels*kernel_size*kernel_size), self.kern)+self.biases)
+		# output=np.array([(np.dot(np.take(i,self.ind),self.kern)+self.biases) for i in padded]).Reshape(self.batches,self.out_row,self.out_col,self.num_kernels)
+		# output=(np.dot(np.take(padded, bind).Reshape(-1,self.channels*kernel_size*kernel_size), self.kern)+self.biases)
 		# [self.batches*self.out_row*self.out_col,self.channels*kernel_size*kernel_size] . [self.channels*kernel_size*kernel_size, self.num_kernels]
 		ctake.take(c_void_p(np.ascontiguousarray(self.padded).ctypes.data), c_void_p(self.ind.ctypes.data),
 				c_void_p(self.coled.ctypes.data), c_int(self.batches), c_int(self.padded[0].size), c_int(self.ind.size),
@@ -201,7 +201,7 @@ class conv2d(Layer):
 		self.output = self.coled.dot(self.kern)
 		if self.bias_is_not_0:
 			self.output += self.biases
-		self.z_out = self.output.reshape(self.batches, self.out_row, self.out_col, self.num_kernels)
+		self.z_out = self.output.Reshape(self.batches, self.out_row, self.out_col, self.num_kernels)
 		self.a_out = self.activation(self.z_out)
 		return self.a_out
 
@@ -277,11 +277,11 @@ class max_pool(Layer):
 		inp = inp.reshape(self.batches, self.out_row, self.ksz, self.out_col, self.ksz, self.channels)
 		output = inp.max(axis=(2, 4), keepdims=True)
 		self.mask = (inp == output)
-		return output.reshape(self.batches, self.out_row, self.out_col, self.channels)
+		return output.Reshape(self.batches, self.out_row, self.out_col, self.channels)
 
 	def backprop(self, grads, layer=1):
 		# grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		z_out = (self.mask * grads.reshape(self.batches, self.out_row, 1, self.out_col, 1, self.channels))
+		z_out = (self.mask * grads.Reshape(self.batches, self.out_row, 1, self.out_col, 1, self.channels))
 		if self.rem_col:
 			self.padded[:, :-self.rem_col, :-self.rem_col, :] = z_out.reshape(self.batches, self.row, self.col, self.channels)
 			return self.padded.reshape(self.input_shape)
@@ -309,13 +309,13 @@ class globalAveragePool(Layer):
 	def forward(self, inp, training=True):
 		self.input_shape = inp.shape
 		self.batches = self.input_shape[0]
-		inp = inp.reshape(self.batches, self.Ncount, self.channels)
+		inp = inp.Reshape(self.batches, self.Ncount, self.channels)
 		output = inp.mean(axis=1)
-		return output.reshape(self.batches, self.channels)
+		return output.Reshape(self.batches, self.channels)
 
 	def backprop(self, grads, layer=1):
 		# grads/=self.Ncount
-		z_out = grads.repeat(self.Ncount, axis=0).reshape(self.batches, self.row, self.col, self.channels)
+		z_out = grads.repeat(self.Ncount, axis=0).Reshape(self.batches, self.row, self.col, self.channels)
 		return z_out
 
 
@@ -345,8 +345,8 @@ class upsampling(Layer):
 
 	def backprop(self, grads, layer=1):
 		# grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		grads = grads.reshape(self.input_shape[0], self.row, self.ksz, self.col, self.ksz, self.channels)
-		return grads.sum(axis=(2, 4), keepdims=True).reshape(self.input_shape)
+		grads = grads.Reshape(self.input_shape[0], self.row, self.ksz, self.col, self.ksz, self.channels)
+		return grads.sum(axis=(2, 4), keepdims=True).Reshape(self.input_shape)
 
 
 class flatten(Layer):
@@ -366,10 +366,10 @@ class flatten(Layer):
 		self.activation = echo
 
 	def forward(self, inp, training=True):
-		return inp.reshape(-1, self.fsz)
+		return inp.Reshape(-1, self.fsz)
 
 	def backprop(self, grads, layer=1):
-		return grads.reshape(-1, self.r, self.c, self.channels)
+		return grads.Reshape(-1, self.r, self.c, self.channels)
 
 
 class reshape(Layer):
@@ -389,16 +389,16 @@ class reshape(Layer):
 		for i in target_shape:
 			tt /= i
 		if tt != 1:
-			raise Exception("Cannot reshape input " + str(self.input_shape) + " to " + str(target_shape) + '.')
+			raise Exception("Cannot Reshape input " + str(self.input_shape) + " to " + str(target_shape) + '.')
 		self.shape = (None, *target_shape)
 		self.param = 0
 		self.activation = echo
 
 	def forward(self, inp, training=True):
-		return inp.reshape(-1, *self.target_shape)
+		return inp.Reshape(-1, *self.target_shape)
 
 	def backprop(self, grads, layer=1):
-		return grads.reshape(-1, *self.input_shape)
+		return grads.Reshape(-1, *self.input_shape)
 
 
 class dense(Layer):

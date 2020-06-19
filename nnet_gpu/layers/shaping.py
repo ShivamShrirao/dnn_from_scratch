@@ -2,7 +2,7 @@
 from .base_layer import *
 
 
-class flatten(Layer):
+class Flatten(Layer):
 	def __init__(
 			self,
 			name=None
@@ -19,13 +19,13 @@ class flatten(Layer):
 		self.activation = echo
 
 	def forward(self, inp, training=True):
-		return inp.reshape(-1, self.fsz)
+		return inp.Reshape(-1, self.fsz)
 
 	def backprop(self, grads, do_d_inp=True):
-		return grads.reshape(-1, self.r, self.c, self.channels)
+		return grads.Reshape(-1, self.r, self.c, self.channels)
 
 
-class reshape(Layer):
+class Reshape(Layer):
 	def __init__(
 			self,
 			target_shape,
@@ -43,13 +43,13 @@ class reshape(Layer):
 		for i in self.target_shape:
 			tt /= i
 		if tt != 1:
-			raise Exception("Cannot reshape input " + str(self.input_shape) + " to " + str(self.target_shape) + '.')
+			raise Exception("Cannot Reshape input " + str(self.input_shape) + " to " + str(self.target_shape) + '.')
 		self.shape = (None, *self.target_shape)
 		self.param = 0
 		self.activation = echo
 
 	def forward(self, inp, training=True):
-		return inp.reshape(-1, *self.target_shape)
+		return inp.Reshape(-1, *self.target_shape)
 
 	def backprop(self, grads, do_d_inp=True):
-		return grads.reshape(-1, *self.input_shape)
+		return grads.Reshape(-1, *self.input_shape)

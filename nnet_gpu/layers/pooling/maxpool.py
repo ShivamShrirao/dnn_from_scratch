@@ -5,7 +5,7 @@ from ...stream_handler import stream_maps
 
 # TODO: Convert operations to gpu kernel
 
-class max_pool(Layer):
+class MaxPool(Layer):
 	def __init__(
 			self,
 			input_shape=None,
@@ -45,19 +45,19 @@ class max_pool(Layer):
 		# 	if self.batches!=batches:
 		# 		self.padded=cp.zeros(self.input_shape,dtype=self.dtype)
 		self.batches = batches
-		inp = inp.reshape(self.batches, self.out_row, self.ksz, self.out_col, self.ksz, self.channels)
+		inp = inp.Reshape(self.batches, self.out_row, self.ksz, self.out_col, self.ksz, self.channels)
 		output = inp.max(axis=(2, 4), keepdims=True)
 		self.out_event = stream_maps.default_stream.record(self.out_event)
 		with self.mask_stream:
 			self.mask_stream.wait_event(self.out_event)
 			self.mask = (inp == output)
-		return output.reshape(self.batches, self.out_row, self.out_col, self.channels)
+		return output.Reshape(self.batches, self.out_row, self.out_col, self.channels)
 
 	def backprop(self, grads, do_d_inp=True):
 		# grads[self.batches,esz,esz,self.channels],inp[self.batches,row,col,self.channels],kernels[self.ksz,self.ksz],stride[row,col]
-		z_out = (self.mask * grads.reshape(self.batches, self.out_row, 1, self.out_col, 1, self.channels))
+		z_out = (self.mask * grads.Reshape(self.batches, self.out_row, 1, self.out_col, 1, self.channels))
 		# if self.rem_col:
-		# 	self.padded[:,:-self.rem_col,:-self.rem_col,:]=z_out.reshape(self.batches,self.row,self.col,self.channels)
-		# 	return self.padded.reshape(self.input_shape)
+		# 	self.padded[:,:-self.rem_col,:-self.rem_col,:]=z_out.Reshape(self.batches,self.row,self.col,self.channels)
+		# 	return self.padded.Reshape(self.input_shape)
 		# else:
 		return z_out.reshape(self.input_shape)

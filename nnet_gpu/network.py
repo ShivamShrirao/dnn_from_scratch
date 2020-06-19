@@ -25,18 +25,26 @@ class Sequential(Layer):
 		self.sequence.append(obj)
 
 	def forward(self, X_inp, training=True):
-		for obj in self.sequence:
+		obj = self.sequence[0]
+		while True:
 			X_inp = obj.forward(X_inp, training=training)
-		return X_inp
+			if obj.output_layers:
+				obj = obj.output_layers[0]
+			else:
+				return X_inp
 
 	def backprop(self, grads, do_d_inp=False):
-		for obj in self.sequence[::-1]:
+		obj = self.sequence[-1]
+		while True:
 			if do_d_inp:
 				do_flag = True
 			else:
 				do_flag = obj.input_layer is not None
 			grads = obj.backprop(grads, do_d_inp=do_flag)
-		return grads
+			if obj.input_layer:
+				obj = obj.input_layer
+			else:
+				return grads
 
 	def predict(self, X_inp):
 		return self.forward(X_inp.astype(self.dtype, copy=False), training=False)
@@ -152,7 +160,7 @@ class Sequential(Layer):
 		sv_me = []
 		for obj in self.sequence:
 			if obj.param > 0:
-				if obj.__class__ == layers.BatchNormalization:
+				if isinstance(obj, layers.BatchNormalization):
 					sv_me.append((obj.weights, obj.biases, obj.moving_mean, obj.moving_var))
 				else:
 					sv_me.append((obj.weights, obj.biases))  # ,obj.w_m,obj.w_v,obj.b_m,obj.b_v))
@@ -165,12 +173,12 @@ class Sequential(Layer):
 		idx = 0
 		for obj in self.sequence:
 			if obj.param > 0:
-				if obj.__class__ == layers.BatchNormalization:
+				if isinstance(obj, layers.BatchNormalization):
 					obj.weights, obj.biases, obj.moving_mean, obj.moving_var = sv_me[idx]
 				else:
 					obj.weights, obj.biases = sv_me[idx]
-					if obj.__class__ == layers.conv2d:
-						obj.kernels = obj.weights
+					if isinstance(obj, layers.Conv2D):		# TODO - Verify isinstance works.
+						obj.kernels = obj.weights			# Cause kernels need to be initialized before initialising backprop variables.
 						obj.init_back()
 				obj.kernels = obj.weights
 				idx += 1

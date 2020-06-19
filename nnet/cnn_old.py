@@ -90,7 +90,7 @@ class conv_net:
 		padded = np.zeros((batches, d, row, col))
 		padded[:, :, padding:-padding, padding:-padding] = inp
 		# Take all windows into a matrix
-		kern = kernels.reshape(-1, num_ker)
+		kern = kernels.Reshape(-1, num_ker)
 		window = (np.arange(ksz)[:, None] * row + np.arange(ksz)).ravel() + np.arange(d)[:, None] * row * col
 		slider = (np.arange(out_row * stride[0])[:, None] * row + np.arange(out_col * stride[1]))
 		ind = window.ravel() + slider[::stride[0], ::stride[1]].ravel()[:, None]
@@ -98,9 +98,9 @@ class conv_net:
 		for i, img in enumerate(padded):  # img[d,row,col]
 			# windows(out_row*out_col, ksz*ksz*d) . kernels(d*ksz*ksz,num_ker)
 			output[i] = np.dot(np.take(img, ind), kern) + biases
-		# output=np.array([(np.dot(np.take(i,ind),kern)+biases) for i in padded]).reshape(batches,out_row,out_col,num_ker)
+		# output=np.array([(np.dot(np.take(i,ind),kern)+biases) for i in padded]).Reshape(batches,out_row,out_col,num_ker)
 		# bind= np.arange(batches)[:,None]*d*row*col+ind.ravel()		#for batches
-		# output=(np.dot(np.take(padded, bind).reshape(-1,d*ksz*ksz), kern)+biases)
+		# output=(np.dot(np.take(padded, bind).Reshape(-1,d*ksz*ksz), kern)+biases)
 		# [batches*out_row*out_col,d*ksz*ksz] . [d*ksz*ksz, num_ker]
 		return output.reshape(batches, out_row, out_col, num_ker)
 
@@ -118,7 +118,7 @@ class conv_net:
 			d_inputs = self.conv2d(errors, flipped, 0)
 		else:
 			d_inputs = 0
-		d_bias = errors.reshape(-1, num_ker).mean(axis=0)[None, :]
+		d_bias = errors.Reshape(-1, num_ker).mean(axis=0)[None, :]
 
 		return d_inputs, d_kernels * self.learning_rate, d_bias * self.learning_rate
 
@@ -127,15 +127,15 @@ class conv_net:
 		ksz = ksize[0]
 		batches, row, col, d = inp.shape
 		out_row, out_col = row // ksz, col // ksz
-		ipp = inp.reshape(batches, out_row, ksz, out_col, ksz, d)
+		ipp = inp.Reshape(batches, out_row, ksz, out_col, ksz, d)
 		output = ipp.max(axis=(2, 4), keepdims=True)
 		mask = ((ipp - output) == 0)
 		# [batches,o_row,o_col,d]
-		return output.squeeze().reshape(batches, out_row, out_col, d), mask
+		return output.squeeze().Reshape(batches, out_row, out_col, d), mask
 
 	def max_pool_back(self, errors, inp, mask, ksize=[2, 2], stride=[2, 2]):
 		# errors[batches,esz,esz,d],inp[batches,row,col,d],kernels[ksz,ksz],stride[row,col]
 		ksz = ksize[0]
 		batches, row, col, d = inp.shape
 		out_row, out_col = row // ksz, col // ksz
-		return (mask * errors.reshape(batches, out_row, 1, out_col, 1, d)).reshape(inp.shape)
+		return (mask * errors.Reshape(batches, out_row, 1, out_col, 1, d)).Reshape(inp.shape)

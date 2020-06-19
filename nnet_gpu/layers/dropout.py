@@ -2,7 +2,7 @@
 from .base_layer import *
 
 
-class dropout(Layer):
+class Dropout(Layer):
 	def __init__(
 			self,
 			rate=0.2,

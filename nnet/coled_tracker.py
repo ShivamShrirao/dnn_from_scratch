@@ -22,7 +22,7 @@ class coled_tracker:
 			self.COLED = np.empty(coled_size, dtype=self.dtype)
 			for oo in self.objs:
 				try:
-					oo.coled = self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+					oo.coled = self.COLED.ravel()[:oo.coled.size].Reshape(oo.coled.shape)
 				except:
 					self.objs.remove(oo)
 			self.objs.add(obj)
@@ -35,7 +35,7 @@ class coled_tracker:
 				self.COLED = np.empty(coled_size, dtype=self.dtype)
 				for oo in self.objs:
 					try:
-						oo.coled = self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+						oo.coled = self.COLED.ravel()[:oo.coled.size].Reshape(oo.coled.shape)
 					except:
 						self.objs.remove(oo)
 				self.objs.add(obj)
@@ -54,5 +54,5 @@ class coled_tracker:
 			if self.COLED.nbytes > mx.coled.nbytes:
 				self.COLED = np.empty(mx.coled.size, dtype=self.dtype)
 				for oo in self.objs:
-					oo.coled = self.COLED.ravel()[:oo.coled.size].reshape(oo.coled.shape)
+					oo.coled = self.COLED.ravel()[:oo.coled.size].Reshape(oo.coled.shape)
 		collect()

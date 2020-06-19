@@ -3,7 +3,7 @@ from .base_layer import *
 from ..stream_handler import stream_maps
 
 
-class dense(Layer):
+class Dense(Layer):
 	def __init__(
 			self,
 			num_out,

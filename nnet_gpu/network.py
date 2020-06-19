@@ -156,7 +156,7 @@ class Sequential(Layer):
 			self.del_loss = del_mean_squared_error
 		self.lenseq_m1 = len(self.sequence) - 1
 
-	def save_weights(self, path):
+	def save_weights(self, path):						# TODO - make a proper saving mechanism.
 		sv_me = []
 		for obj in self.sequence:
 			if obj.param > 0:
@@ -174,13 +174,12 @@ class Sequential(Layer):
 		for obj in self.sequence:
 			if obj.param > 0:
 				if isinstance(obj, layers.BatchNormalization):
-					obj.weights, obj.biases, obj.moving_mean, obj.moving_var = sv_me[idx]
+					obj.kernels, obj.biases, obj.moving_mean, obj.moving_var = sv_me[idx]
 				else:
-					obj.weights, obj.biases = sv_me[idx]
+					obj.kernels, obj.biases = sv_me[idx]
 					if isinstance(obj, layers.Conv2D):		# TODO - Verify isinstance works.
-						obj.kernels = obj.weights			# Cause kernels need to be initialized before initialising backprop variables.
 						obj.init_back()
-				obj.kernels = obj.weights
+				obj.weights = obj.kernels
 				idx += 1
 
 	def summary(self):					# TODO - Show connections.

@@ -4,6 +4,8 @@ from ..stream_handler import stream_maps
 
 
 # TODO: Convert operations to gpu kernel
+# TODO: Fold into Convolution.
+# TODO: Check and remove if  previous layer has bias.
 
 class BatchNormalization(Layer):
 	def __init__(

@@ -24,6 +24,18 @@ class Sequential(Layer):
 			obj(self.sequence[-1])
 		self.sequence.append(obj)
 
+	def compile(self, optimizer=adam, beta=0.9, loss=cross_entropy, learning_rate=0.001):
+		self.optimizer = optimizer
+		self.beta = beta
+		self.learning_rate = learning_rate
+		self.loss = loss
+		if self.loss == cross_entropy:
+			self.sequence[-1].not_softmax_cross_entrp = False
+			self.del_loss = del_cross_soft
+		elif self.loss == mean_squared_error:
+			self.del_loss = del_mean_squared_error
+		self.lenseq_m1 = len(self.sequence) - 1
+
 	def forward(self, X_inp, training=True):
 		obj = self.sequence[0]
 		while True:
@@ -89,20 +101,20 @@ class Sequential(Layer):
 					inp = cp.asarray(X_inp[idx:idx + batch_size])
 					y_inp = cp.asarray(labels[idx:idx + batch_size])
 				idx += inp.shape[0]
-				logits = self.train_on_batch(inp, y_inp)
+				outputs = self.train_on_batch(inp, y_inp)
 				self.logit_event = cp.cuda.get_current_stream().record()
 				with eval_stream:
 					eval_stream.wait_event(self.logit_event)
 					if accuracy_metric:
-						if self.loss == cross_entropy_with_logits:
-							ans = logits.argmax(axis=1)
+						if self.loss == cross_entropy:
+							ans = outputs.argmax(axis=1)
 							cor = y_inp.argmax(axis=1)
 						else:
-							ans = logits
+							ans = outputs
 							cor = y_inp
 						nacc = (ans == cor).mean().get(eval_stream)
 						acc = info_beta * nacc + (1 - info_beta) * acc
-					sample_loss = self.loss(logits=logits, labels=y_inp).mean().get(eval_stream) / 10
+					sample_loss = self.loss(outputs=outputs, labels=y_inp).mean().get(eval_stream) / 10
 					loss = info_beta * sample_loss + (1 - info_beta) * loss
 					samtm = time.time() - smtst
 					sam_time = info_beta * samtm + (1 - info_beta) * sam_time
@@ -131,30 +143,18 @@ class Sequential(Layer):
 			inp = cp.asarray(VX[vidx:vidx + batch_size])
 			y_inp = cp.asarray(VY[vidx:vidx + batch_size])
 			vidx += inp.shape[0]
-			logits = self.predict(inp)
-			if self.loss == cross_entropy_with_logits:
-				ans = logits.argmax(axis=1)
+			outputs = self.predict(inp)
+			if self.loss == cross_entropy:
+				ans = outputs.argmax(axis=1)
 				cor = y_inp.argmax(axis=1)
 			else:
-				ans = logits
+				ans = outputs
 				cor = y_inp
 			vacc += (ans == cor).sum()
-			sample_loss = self.loss(logits=logits, labels=y_inp).mean() / 10
+			sample_loss = self.loss(outputs=outputs, labels=y_inp).mean() / 10
 			vloss = info_beta * sample_loss + (1 - info_beta) * vloss
 		end = time.time()
 		print(f"\rValidation Accuracy: {(vacc / lnvx).get():.4f} - val_loss: {vloss.get():.4f} - Time: {end - start:.3f}s")
-
-	def compile(self, optimizer=adam, beta=0.9, loss=cross_entropy_with_logits, learning_rate=0.001):
-		self.optimizer = optimizer
-		self.beta = beta
-		self.learning_rate = learning_rate
-		self.loss = loss
-		if self.loss == cross_entropy_with_logits:
-			self.sequence[-1].not_softmax_cross_entrp = False
-			self.del_loss = del_cross_soft
-		elif self.loss == mean_squared_error:
-			self.del_loss = del_mean_squared_error
-		self.lenseq_m1 = len(self.sequence) - 1
 
 	def save_weights(self, path):						# TODO - make a proper saving mechanism.
 		sv_me = []

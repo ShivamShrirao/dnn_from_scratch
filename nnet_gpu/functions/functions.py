@@ -76,30 +76,30 @@ def softmax(z, a=None, derivative=False):
 		return exps
 
 
-def cross_entropy_with_logits(logits, labels, epsilon=1e-12):
-	return -cp.sum(labels * cp.log(logits + epsilon), axis=0, keepdims=True)
+def cross_entropy_with_logits(outputs, labels, epsilon=1e-12):
+	return -cp.sum(labels * cp.log(outputs + epsilon), axis=0, keepdims=True)
 
 
-def cross_entropy(logits, labels, epsilon=1e-12):
+def cross_entropy(outputs, labels, epsilon=1e-12):
 	labels = labels.clip(epsilon, 1 - epsilon)
-	logits = logits.clip(epsilon, 1 - epsilon)
-	return -labels * cp.log(logits) - (1 - labels) * cp.log(1 - logits)
+	outputs = outputs.clip(epsilon, 1 - epsilon)
+	return -labels * cp.log(outputs) - (1 - labels) * cp.log(1 - outputs)
 
 
-def del_cross_sigmoid(logits, labels):
-	return (logits - labels)
+def del_cross_sigmoid(outputs, labels):
+	return (outputs - labels)
 
 
-def del_cross_soft(logits, labels):
-	return (logits - labels)
+def del_cross_soft(outputs, labels):
+	return (outputs - labels)
 
 
-def mean_squared_error(logits, labels):
-	return ((logits - labels) ** 2) / 2
+def mean_squared_error(outputs, labels):
+	return ((outputs - labels) ** 2) / 2
 
 
-def del_mean_squared_error(logits, labels):
-	return (logits - labels)
+def del_mean_squared_error(outputs, labels):
+	return (outputs - labels)
 
 
 def echo(z, a=None, derivative=False, **kwargs):

@@ -106,7 +106,7 @@ Non-trainable Params: 704
 ### Compile model with optimizer, loss and Learning rate
 
 ```python
-model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy_with_logits,learning_rate=0.001)
+model.compile(optimizer=optimizers.adam,loss=functions.cross_entropy,learning_rate=0.001)
 ```
 
 ### Optimizers avaliable    (nnet.optimizers)

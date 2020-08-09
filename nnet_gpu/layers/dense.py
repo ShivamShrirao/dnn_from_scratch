@@ -68,7 +68,7 @@ class Dense(Layer):
 		return self.a_out
 
 	def backprop(self, grads, do_d_inp=True):
-		if self.notEcho and self.not_softmax_cross_entrp:  # make it better in future
+		if self.notEcho and self.not_softmax_cross_entrp:  # TODO - make it better in future by adding Activation layer in graph
 			grads *= self.activation(self.z_out, self.a_out, derivative=True)
 		self.grad_event = stream_maps.default_stream.record(self.grad_event)
 		with self.backp_stream:

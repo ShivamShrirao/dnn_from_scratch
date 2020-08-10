@@ -19,10 +19,10 @@ class Flatten(Layer):
 		self.activation = echo
 
 	def forward(self, inp, training=True):
-		return inp.Reshape(-1, self.fsz)
+		return inp.reshape(-1, self.fsz)
 
 	def backprop(self, grads, do_d_inp=True):
-		return grads.Reshape(-1, self.r, self.c, self.channels)
+		return grads.reshape(-1, self.r, self.c, self.channels)
 
 
 class Reshape(Layer):
@@ -49,7 +49,7 @@ class Reshape(Layer):
 		self.activation = echo
 
 	def forward(self, inp, training=True):
-		return inp.Reshape(-1, *self.target_shape)
+		return inp.reshape(-1, *self.target_shape)
 
 	def backprop(self, grads, do_d_inp=True):
-		return grads.Reshape(-1, *self.input_shape)
+		return grads.reshape(-1, *self.input_shape)

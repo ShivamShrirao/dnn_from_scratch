@@ -3,11 +3,14 @@ from ..base_layer import *
 from ...stream_handler import stream_maps
 from .conv_utils import *
 
+# TODO - wrong updates when height/width is not perfectly divisible. 7/2 --> 4
+
 
 class Conv2D(Layer):
 	"""
 	2 Dimensional convolution (cross correlation).
 	"""
+
 	def __init__(
 			self,
 			num_kernels=0,

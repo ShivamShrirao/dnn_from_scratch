@@ -106,7 +106,7 @@ class Sequential(Layer):
 				with eval_stream:
 					eval_stream.wait_event(self.logit_event)
 					if accuracy_metric:
-						if self.loss == cross_entropy:
+						if self.loss == cross_entropy or self.loss == mean_squared_error:
 							ans = outputs.argmax(axis=1)
 							cor = y_inp.argmax(axis=1)
 						else:
@@ -144,7 +144,7 @@ class Sequential(Layer):
 			y_inp = cp.asarray(VY[vidx:vidx + batch_size])
 			vidx += inp.shape[0]
 			outputs = self.predict(inp)
-			if self.loss == cross_entropy:
+			if self.loss == cross_entropy or self.loss == mean_squared_error:
 				ans = outputs.argmax(axis=1)
 				cor = y_inp.argmax(axis=1)
 			else:

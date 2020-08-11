@@ -175,6 +175,6 @@ class Conv2D(Layer):
 			d_inputs = 0
 		if self.bias_is_not_0:
 			with self.backp_stream:
-				self.d_c_b = grads.Reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
-		# self.d_c_b = grads.Reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
+				self.d_c_b = grads.reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
+		# self.d_c_b = grads.reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
 		return d_inputs

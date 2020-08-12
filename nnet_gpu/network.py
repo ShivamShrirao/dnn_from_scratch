@@ -164,12 +164,18 @@ class Sequential(Layer):
 					sv_me.append((obj.weights, obj.biases, obj.moving_mean, obj.moving_var))
 				else:
 					sv_me.append((obj.weights, obj.biases))  # ,obj.w_m,obj.w_v,obj.b_m,obj.b_v))
-		with open(path, 'wb') as f:
-			pickle.dump(sv_me, f)
+		if isinstance(path, str):
+			with open(path, 'wb') as f:
+				pickle.dump(sv_me, f)
+		else:
+			pickle.dump(sv_me, path)
 
 	def load_weights(self, path):
-		with open(path, 'rb') as f:
-			sv_me = pickle.load(f)
+		if isinstance(path, str):
+			with open(path, 'rb') as f:
+				sv_me = pickle.load(f)
+		else:
+			sv_me = pickle.load(path)
 		idx = 0
 		for obj in self.sequence:
 			if obj.param > 0:

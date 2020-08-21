@@ -3,6 +3,11 @@
 A High Level Deep Learning library made from scratch (just using numpy/cupy). Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
 Just made to learn deep working and backpropogation of CNNs and various machine learning algorithms. Deriving and making it gave alot of insight to how it all works. Will keep adding new networks and algorithms in future.
 
+## Installation
+```sh
+$ python3 -m pip install git+https://github.com/ShivamShrirao/dnn_from_scratch.git
+```
+
 ## Usage
 
 Check Examples and Implementations below.

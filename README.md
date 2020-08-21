@@ -7,7 +7,7 @@ Just made to learn deep working and backpropogation of CNNs and various machine 
 ```sh
 python3 -m pip install git+https://github.com/ShivamShrirao/dnn_from_scratch.git
 ```
-or for development
+Or for development
 ```sh
 git clone https://github.com/ShivamShrirao/dnn_from_scratch.git
 python -m pip install -e dnn_from_scratch

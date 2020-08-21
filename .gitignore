@@ -5,3 +5,6 @@ __pycache__/
 mntest*
 .vscode
 .idea
+build
+dist
+*.egg-info/

@@ -3,6 +3,7 @@ from ..base_layer import *
 from ...stream_handler import stream_maps
 from .conv_utils import *
 
+
 # TODO - wrong updates when height/width is not perfectly divisible. 7/2 --> 4
 
 
@@ -112,6 +113,7 @@ class Conv2D(Layer):
 				stride=self.stride, padding=self.padding, dilation=self.dilation, backp=False, out_row=self.row,
 				out_col=self.col)
 
+	# TODO - Separate kernel and bias init.
 	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=cp.float32):
 		weights = std * cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels, dtype=dtype) + mean
 		# weights/=cp.sqrt(num_inp_channels)

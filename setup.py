@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -20,4 +20,5 @@ setup(
         "Environment :: GPU :: NVIDIA CUDA",
     ],
     python_requires='>=3.6',
+    package_data={"": ["libctake.so"]}
 )

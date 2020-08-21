@@ -11,6 +11,7 @@ Descriptions                          |     Repository Link
 :------------------------------------:|:-------------------------------:
 Basic CNNs and ANNs on CIFAR,MNIST... | https://github.com/ShivamShrirao/dnn_scratch_basic_implementations
 Basic GANs                            | https://github.com/ShivamShrirao/GANs_from_scratch
+Deep Q learning                       | https://github.com/ShivamShrirao/deep_Q_learning_from_scratch
 
 
 ### Import modules

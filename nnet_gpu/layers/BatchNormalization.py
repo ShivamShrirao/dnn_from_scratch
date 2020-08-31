@@ -92,12 +92,12 @@ class BatchNormalization(Layer):
 		if batches != self.batches:
 			self.batches = batches
 
-		self.d_c_b = grads.sum(axis=0)  # (row,col,channels)		# biases is beta
+		self.d_c_b = grads.mean(axis=0)  # (row,col,channels)		# biases is beta
 		self.grad_event = stream_maps.default_stream.record(self.grad_event)
 
 		with self.backp_stream:
 			self.backp_stream.wait_event(self.grad_event)
-			self.d_c_w = (self.xnorm * grads).sum(axis=0)  # (row,col,channels)		# gamma is weights
+			self.d_c_w = (self.xnorm * grads).mean(axis=0)  # (row,col,channels)		# gamma is weights
 
 		# d_inp=(1/self.batches)*self.istd*self.weights*(self.batches*grads-self.d_c_b-self.xmu*self.ivar*((grads*self.xmu).sum(axis=0)))
 		d_inp = self.istd * self.weights * (

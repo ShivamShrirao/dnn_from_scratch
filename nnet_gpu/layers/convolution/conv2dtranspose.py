@@ -99,7 +99,7 @@ class Conv2Dtranspose(Conv2D):
 		with self.backp_stream:
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w = self.d_ker.forward(grads.transpose(3, 1, 2, 0))  # [channels,row,col,batches]
-		# self.d_c_w/=self.batches		# take mean change over batches
+			self.d_c_w/= self.batches		# take mean change over batches
 		if do_d_inp:
 			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
 		# assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
@@ -107,6 +107,6 @@ class Conv2Dtranspose(Conv2D):
 			d_inputs = 0
 		if self.bias_is_not_0:
 			with self.backp_stream:
-				self.d_c_b = grads.reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
+				self.d_c_b = grads.reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
 		# self.d_c_b=grads.reshape(-1,self.num_kernels).mean(axis=0,keepdims=True)
 		return d_inputs

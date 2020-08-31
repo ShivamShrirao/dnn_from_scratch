@@ -73,12 +73,12 @@ class Dense(Layer):
 		self.grad_event = stream_maps.default_stream.record(self.grad_event)
 		with self.backp_stream:
 			self.backp_stream.wait_event(self.grad_event)
-			self.d_c_w = self.inp.T.dot(grads)  # /self.inp.shape[0]
+			self.d_c_w = self.inp.T.dot(grads)/self.inp.shape[0]
 		if do_d_inp:
 			d_c_a = grads.dot(self.weights.T)
 		else:
 			d_c_a = 0
 		with self.backp_stream:
-			self.d_c_b = grads.sum(axis=0, keepdims=True)
+			self.d_c_b = grads.mean(axis=0, keepdims=True)
 		# self.d_c_b=grads.mean(axis=0,keepdims=True)
 		return d_c_a

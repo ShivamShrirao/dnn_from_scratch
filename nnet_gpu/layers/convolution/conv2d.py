@@ -171,7 +171,7 @@ class Conv2D(Layer):
 		with self.backp_stream:
 			self.backp_stream.wait_event(self.grad_event)
 			self.d_c_w = self.d_ker.forward(self.inp.transpose(1, 2, 3, 0))  # [channels,row,col,batches]
-		# self.d_c_w/=self.batches		#take mean change over batches
+			self.d_c_w/= self.batches		# take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if do_d_inp:
 			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
@@ -180,6 +180,6 @@ class Conv2D(Layer):
 			d_inputs = 0
 		if self.bias_is_not_0:
 			with self.backp_stream:
-				self.d_c_b = grads.reshape(-1, self.num_kernels).sum(axis=0, keepdims=True)
+				self.d_c_b = grads.reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
 		# self.d_c_b = grads.reshape(-1, self.num_kernels).mean(axis=0, keepdims=True)
 		return d_inputs

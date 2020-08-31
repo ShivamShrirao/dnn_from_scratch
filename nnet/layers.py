@@ -43,7 +43,7 @@ class Layer:
 		return self
 
 
-class conv2d(Layer):
+class Conv2D(Layer):
 	def __init__(self, num_kernels=0, input_shape=None, kernel_size=0, kernels=None, activation=echo, biases=0, stride=(1, 1),
 			dilation=(1, 1), dlate=(1, 1), padding=None, batches=1, backp=True, std=0.01, name=None, out_row=None, out_col=None,
 			off_transpose=0):  # padding=(ksz-1)/2 for same shape in stride 1
@@ -145,12 +145,12 @@ class conv2d(Layer):
 			distride = self.stride
 			off_transpose_ker = off_transpose_inp = 0
 		grads = self.output.reshape(self.batches, self.out_row, self.out_col, self.num_kernels)
-		self.d_ker = conv2d(input_shape=(self.row, self.col, self.batches), kernels=grads, activation=echo, dilation=self.stride,
+		self.d_ker = Conv2D(input_shape=(self.row, self.col, self.batches), kernels=grads, activation=echo, dilation=self.stride,
 				dlate=self.dlate, padding=padk, backp=False, off_transpose=off_transpose_ker, out_row=self.kernel_size,
 				out_col=self.kernel_size, batches=self.channels)
 		self.d_ker.is_not_dker = False
 		# self.d_ker.dlate=self.dlate
-		self.d_inp = conv2d(input_shape=(self.out_row, self.out_col, self.num_kernels), kernels=self.flipped, activation=echo,
+		self.d_inp = Conv2D(input_shape=(self.out_row, self.out_col, self.num_kernels), kernels=self.flipped, activation=echo,
 				stride=distride, dlate=self.stride, padding=padi, off_transpose=off_transpose_inp, backp=False,
 				out_row=self.row, out_col=self.col)
 
@@ -224,7 +224,7 @@ class conv2d(Layer):
 		return d_inputs
 
 
-class conv2dtranspose(conv2d):
+class Conv2Dtranspose(Conv2D):
 	def __init__(self, num_kernels=0, input_shape=None, kernel_size=0, kernels=None, activation=echo, biases=0, stride=(1, 1),
 			dilation=(1, 1), dlate=(1, 1), padding=None, batches=1, backp=True, std=0.01, name=None, out_row=None, out_col=None):
 		if input_shape is None:
@@ -241,7 +241,7 @@ class conv2dtranspose(conv2d):
 				std=std, name=name, out_row=out_row, out_col=out_col)
 
 
-class max_pool(Layer):
+class MaxPool(Layer):
 	def __init__(self, input_shape=None, ksize=(2, 2), stride=(2, 2), name=None):
 		# inp[batches,row,col,channels], kernels[ksz,ksz], stride[row,col]
 		super().__init__()
@@ -349,7 +349,7 @@ class upsampling(Layer):
 		return grads.sum(axis=(2, 4), keepdims=True).reshape(self.input_shape)
 
 
-class flatten(Layer):
+class Flatten(Layer):
 	def __init__(self, name=None):
 		super().__init__()
 		self.type = self.__class__.__name__
@@ -372,7 +372,7 @@ class flatten(Layer):
 		return grads.reshape(-1, self.r, self.c, self.channels)
 
 
-class reshape(Layer):
+class Reshape(Layer):
 	def __init__(self, target_shape, name=None):
 		super().__init__()
 		self.type = self.__class__.__name__
@@ -401,7 +401,7 @@ class reshape(Layer):
 		return grads.reshape(-1, *self.input_shape)
 
 
-class dense(Layer):
+class Dense(Layer):
 	def __init__(self, num_out, input_shape=None, weights=None, biases=None, activation=echo, mean=0, std=0.01, name=None):
 		super().__init__()
 		self.dtype = np.float32
@@ -463,7 +463,7 @@ class dense(Layer):
 		return d_c_a
 
 
-class dropout(Layer):
+class Dropout(Layer):
 	def __init__(self, rate=0.2, name=None):
 		super().__init__()
 		self.dtype = np.float32
@@ -477,13 +477,13 @@ class dropout(Layer):
 		self.batches = 1
 		self.rate = rate
 		self.scale = 1 / (1 - rate)
-		self.mask = np.random.random((self.batches, *input_shape), dtype=np.float32) > self.rate
+		self.mask = np.random.random((self.batches, *input_shape)) > self.rate
 		self.param = 0
 		self.activation = echo
 
 	def forward(self, inp, training=True):
 		if training:
-			self.mask = (self.scale * (np.random.random(inp.shape, dtype=np.float32) > self.rate)).astype(np.float32,
+			self.mask = (self.scale * (np.random.random(inp.shape) > self.rate)).astype(np.float32,
 					copy=False)  # generate mask with rate probability
 			return inp * self.mask
 		else:

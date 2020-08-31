@@ -31,7 +31,7 @@ class Sequential:
 
 	def backprop(self, err, i):
 		for obj in self.sequence[::-1]:
-			err = obj.backprop(err, do_d_inp=i)
+			err = obj.backprop(err, layer=i)
 			i -= 1
 		return err
 
@@ -164,7 +164,7 @@ class Sequential:
 				else:
 					obj.weights, obj.biases = sv_me[idx]
 					# obj.weights,obj.biases,obj.w_m,obj.w_v,obj.b_m,obj.b_v=sv_me[idx]
-					if obj.__class__ == layers.conv2d:
+					if obj.__class__ == layers.Conv2D:
 						obj.kernels = obj.weights
 						obj.init_back()
 				obj.kernels = obj.weights

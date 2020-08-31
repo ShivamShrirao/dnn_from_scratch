@@ -197,7 +197,7 @@ class Sequential(Layer):
 			sv_me = pickle.load(path)
 		self.weights = sv_me
 
-	def summary(self):  # TODO - Show connections.
+	def summary(self):  # TODO - Show connections. Change print format to f""
 		ipl = layers.InputLayer(self.sequence[0].input_shape)
 		reps = 90
 		print(chr(9149) * reps)

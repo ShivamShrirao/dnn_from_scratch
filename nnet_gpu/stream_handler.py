@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import cupy as cp
 
-N_STREAMS = 16
+N_STREAMS = 40
 
 
 class stream_mapper:
@@ -14,6 +14,10 @@ class stream_mapper:
 		self.idx = (self.idx + 1) % len(self.streams)
 		return self.streams[self.idx]
 	# return self.default_stream
+
+	def sync_streams(self):
+		for srm in self.streams:
+			srm.synchronize()
 
 
 stream_maps = stream_mapper()

@@ -1,5 +1,5 @@
 # Deep Learning Library from scratch
-
+## This JAX version isn't working right now, has been only initialized.
 A High Level Deep Learning library made in jax. Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
 Just made to learn deep working and backpropogation of CNNs and various machine learning algorithms. Deriving and making it gave alot of insight to how it all works. Will keep adding new networks and algorithms in future.
 

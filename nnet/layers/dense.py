@@ -14,7 +14,7 @@ class Dense(Layer):
 			mean=0,
 			std=0.01,
 			name=None,
-			dtype=cp.float32,
+			dtype=jnp.float32,
 			**kwargs
 			):
 		saved_locals = locals()  # save for do_init() function
@@ -32,25 +32,25 @@ class Dense(Layer):
 		num_out = kwargs.get('num_out')
 		mean = kwargs.get('mean')
 		if weights is None:
-			self.weights = std * cp.random.randn(self.input_shape, num_out, dtype=self.dtype) + mean
+			self.weights = std * jnp.random.randn(self.input_shape, num_out, dtype=self.dtype) + mean
 		# weights/=np.sqrt(self.input_shape)
 		else:
 			if weights.shape != (self.input_shape, num_out):
 				raise Exception("weights should be of shape: " + str((self.input_shape, num_out)))
 			else:
-				self.weights = cp.asarray(weights)
+				self.weights = jnp.asarray(weights)
 		if biases is None:
-			self.biases = std * cp.random.randn(1, num_out, dtype=self.dtype) + mean
+			self.biases = std * jnp.random.randn(1, num_out, dtype=self.dtype) + mean
 		else:
 			if biases.shape != (1, num_out):
 				raise Exception("biases should be of shape: " + str((1, num_out)))
 			else:
-				self.biases = cp.asarray(biases)
+				self.biases = jnp.asarray(biases)
 		self.kernels = self.weights
-		self.w_m = cp.zeros_like(self.weights, dtype=self.dtype)
-		self.w_v = cp.zeros_like(self.weights, dtype=self.dtype)
-		self.b_m = cp.zeros_like(self.biases, dtype=self.dtype)
-		self.b_v = cp.zeros_like(self.biases, dtype=self.dtype)
+		self.w_m = jnp.zeros_like(self.weights, dtype=self.dtype)
+		self.w_v = jnp.zeros_like(self.weights, dtype=self.dtype)
+		self.b_m = jnp.zeros_like(self.biases, dtype=self.dtype)
+		self.b_v = jnp.zeros_like(self.biases, dtype=self.dtype)
 		self.shape = (None, num_out)
 		self.param = self.input_shape * num_out + num_out
 		self.not_softmax_cross_entrp = True

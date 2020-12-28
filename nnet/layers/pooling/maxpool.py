@@ -20,7 +20,7 @@ class MaxPool(Layer):
 	def do_init(self, kwargs):
 		self.ksz = kwargs.get('ksize')[0]
 		self.param = 0
-		self.dtype = cp.float32
+		self.dtype = jnp.float32
 		self.type = self.__class__.__name__
 		self.input_shape = kwargs.get('input_shape')
 		if self.input_shape is None:
@@ -29,7 +29,7 @@ class MaxPool(Layer):
 		self.row, self.col, self.channels = self.input_shape
 		# self.rem_col=self.row%self.ksz
 		# if self.rem_col:
-		# 	self.padded=cp.zeros((self.batches,self.row,self.col,self.channels),dtype=self.dtype)
+		# 	self.padded=jnp.zeros((self.batches,self.row,self.col,self.channels),dtype=self.dtype)
 		self.out_row, self.out_col = self.row // self.ksz, self.col // self.ksz
 		# self.row-=self.rem_col
 		# self.col-=self.rem_col
@@ -43,7 +43,7 @@ class MaxPool(Layer):
 		# if self.rem_col:
 		# 	inp=inp[:,:-self.rem_col,:-self.rem_col,:]
 		# 	if self.batches!=batches:
-		# 		self.padded=cp.zeros(self.input_shape,dtype=self.dtype)
+		# 		self.padded=jnp.zeros(self.input_shape,dtype=self.dtype)
 		self.batches = batches
 		inp = inp.reshape(self.batches, self.out_row, self.ksz, self.out_col, self.ksz, self.channels)
 		output = inp.max(axis=(2, 4), keepdims=True)

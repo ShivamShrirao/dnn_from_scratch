@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="dnn_from_scratch",
-    version="0.1.dev1",
+    version="0.1.jax1",
     author="Shivam Shrirao",
     author_email="shivamshrirao@gmail.com",
     description="A high level deep learning library for Convolutional Neural Networks,GANs and more, made from scratch(numpy/cupy implementation).",
@@ -20,5 +20,4 @@ setup(
         "Environment :: GPU :: NVIDIA CUDA",
     ],
     python_requires='>=3.6',
-    package_data={"": ["libctake.so"]}
 )

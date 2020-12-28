@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from ..functions import *
-import numpy as np
-import cupy as cp
+import jax.numpy as jnp
+from jax import random
 
+rng = random.PRNGKey(0)
 
 class Layer:
 	"""
@@ -16,7 +17,7 @@ class Layer:
 	def __init__(self, saved_locals):
 		self.name = self.__class__.__name__
 		self.type = self.__class__.__name__
-		self.dtype = cp.float32
+		self.dtype = jnp.float32
 		self.input_layer = None
 		self.input_shape = None
 		self.output_layers = []

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from ..base_layer import *
 
-
 class Add(Layer):
 	def __init__(
 			self,

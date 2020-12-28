@@ -27,10 +27,10 @@ Deep Q learning                       | https://github.com/ShivamShrirao/deep_Q_
 ### Import modules
 
 ```python
-from nnet_gpu.network import Sequential
-from nnet_gpu.layers import Conv2D,MaxPool,Flatten,Dense,Dropout,BatchNormalization,GlobalAveragePool
-from nnet_gpu import optimizers
-from nnet_gpu import functions
+from nnet.network import Sequential
+from nnet.layers import Conv2D,MaxPool,Flatten,Dense,Dropout,BatchNormalization,GlobalAveragePool
+from nnet import optimizers
+from nnet import functions
 import numpy as np
 import cupy as cp
 ```

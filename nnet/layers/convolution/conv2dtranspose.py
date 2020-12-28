@@ -23,7 +23,7 @@ class Conv2Dtranspose(Conv2D):
 			name=None,
 			out_row=None,
 			out_col=None,
-			dtype=cp.float32,
+			dtype=jnp.float32,
 			**kwargs
 			):
 		largs = locals()
@@ -38,10 +38,10 @@ class Conv2Dtranspose(Conv2D):
 	def num_kernels(self):
 		return self.kernels.shape[0]
 
-	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=cp.float32):
-		weights = std * cp.random.randn(num_kernels, kernel_size[0], kernel_size[1], num_inp_channels, dtype=cp.float32) + mean
-		# weights/=cp.sqrt(num_inp_channels)
-		bias = std * cp.random.randn(1, num_kernels, dtype=cp.float32) + mean
+	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=jnp.float32):
+		weights = std * jnp.random.randn(num_kernels, kernel_size[0], kernel_size[1], num_inp_channels, dtype=jnp.float32) + mean
+		# weights/=jnp.sqrt(num_inp_channels)
+		bias = std * jnp.random.randn(1, num_kernels, dtype=jnp.float32) + mean
 		return weights.astype(dtype, copy=False), bias.astype(dtype, copy=False)
 
 	def init_back(self):
@@ -63,10 +63,10 @@ class Conv2Dtranspose(Conv2D):
 		self.inp = inp.transpose(0, 3, 1, 2)
 		# inp[batches,channels,row,col]
 		self.batches, self.channels, self.row, self.col = self.inp.shape
-		coled = cp.tensordot(self.kernels, self.inp, (3, 1))
-		coled = cp.moveaxis(coled, 3, 0)  # CAN WE REMOVE THIS SOMEHOW ??
-		coled = cp.ascontiguousarray(coled)
-		self.z_out = cp.empty((self.batches, self.num_kernels, self.out_row, self.out_col), dtype=coled.dtype)
+		coled = jnp.tensordot(self.kernels, self.inp, (3, 1))
+		coled = jnp.moveaxis(coled, 3, 0)  # CAN WE REMOVE THIS SOMEHOW ??
+		coled = jnp.ascontiguousarray(coled)
+		self.z_out = jnp.empty((self.batches, self.num_kernels, self.out_row, self.out_col), dtype=coled.dtype)
 		col2im(coled.reduced_view(), self.out_row, self.out_col, self.row, self.col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0],
 				self.padding[1],
@@ -74,7 +74,7 @@ class Conv2Dtranspose(Conv2D):
 				self.z_out)
 		self.z_out = self.z_out.transpose(0, 2, 3, 1)
 		if self.bias_is_not_0:
-			self.z_out = cp.add(self.z_out, self.biases)  # z_out[batches,out_row,out_col,num_kernels]
+			self.z_out = jnp.add(self.z_out, self.biases)  # z_out[batches,out_row,out_col,num_kernels]
 		self.a_out = self.activation(self.z_out)
 		return self.a_out  # a_out[batches,out_row,out_col,num_kernels]
 
@@ -101,7 +101,7 @@ class Conv2Dtranspose(Conv2D):
 			self.d_c_w = self.d_ker.forward(grads.transpose(3, 1, 2, 0))  # [channels,row,col,batches]
 			# self.d_c_w/= self.batches		# take mean change over batches
 		if do_d_inp:
-			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
+			d_inputs = jnp.ascontiguousarray(self.d_inp.forward(grads))
 		# assert d_inputs.shape == (self.batches,self.row,self.col,self.channels),f"{(self.batches,self.row,self.col,self.channels)},{d_inputs.shape}"
 		else:
 			d_inputs = 0

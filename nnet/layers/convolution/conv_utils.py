@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import cupy as cp
+import jax.numpy as jnp
 
 # Both kernels from chainer. May make more efficient by calculating indices once and reusing them all time,
 # like done in CPU version, instead of having to calculate everytime.

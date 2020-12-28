@@ -22,15 +22,15 @@ class BatchNormalization(Layer):
 		self.shape = (None, *input_shape)
 		self.batches = 1
 		self.inp_shape = (self.batches, *input_shape)
-		self.biases = cp.zeros(input_shape, dtype=self.dtype)  # biases is beta
-		self.weights = cp.ones(input_shape, dtype=self.dtype)  # weights is gamma
+		self.biases = jnp.zeros(input_shape, dtype=self.dtype)  # biases is beta
+		self.weights = jnp.ones(input_shape, dtype=self.dtype)  # weights is gamma
 		self.gamma = self.weights
 		self.beta = self.biases
 		self.kernels = self.weights
-		self.w_m = cp.zeros_like(self.weights, dtype=self.dtype)
-		self.w_v = cp.zeros_like(self.weights, dtype=self.dtype)
-		self.b_m = cp.zeros_like(self.biases, dtype=self.dtype)
-		self.b_v = cp.zeros_like(self.biases, dtype=self.dtype)
+		self.w_m = jnp.zeros_like(self.weights, dtype=self.dtype)
+		self.w_v = jnp.zeros_like(self.weights, dtype=self.dtype)
+		self.b_m = jnp.zeros_like(self.biases, dtype=self.dtype)
+		self.b_v = jnp.zeros_like(self.biases, dtype=self.dtype)
 		self.epsilon = kwargs.get('epsilon')
 		self.momentum = kwargs.get('momentum')
 		self.moving_mean = None
@@ -40,7 +40,7 @@ class BatchNormalization(Layer):
 		self.backp_stream = stream_maps.get_next_stream()
 		self.grad_event = stream_maps.default_stream.record()
 
-	# self.update_moving = cp.ElementwiseKernel(
+	# self.update_moving = jnp.ElementwiseKernel(
 	# 'T inp, int32 row, int32 col, int32 out_row, int32 out_col,'
 	# 'T coled',
 	# '''
@@ -58,7 +58,7 @@ class BatchNormalization(Layer):
 			var = (self.xmu ** 2).mean(axis=0)  # (row,col,channels)
 			self.grad_event = stream_maps.default_stream.record(self.grad_event)
 			self.ivar = 1 / (var + self.epsilon)  # (row,col,channels)
-			self.istd = cp.sqrt(self.ivar)  # (row,col,channels)
+			self.istd = jnp.sqrt(self.ivar)  # (row,col,channels)
 			self.xnorm = self.xmu * self.istd  # (batches,row,col,channels)
 			with self.backp_stream:
 				self.backp_stream.wait_event(self.grad_event)
@@ -74,16 +74,16 @@ class BatchNormalization(Layer):
 				self.xmu = inp - mean  # (batches,row,col,channels)
 				var = (self.xmu ** 2).mean(axis=0)  # (row,col,channels)
 				self.ivar = 1 / (var + self.epsilon)  # (row,col,channels)
-				self.istd = cp.sqrt(self.ivar)  # (row,col,channels)
+				self.istd = jnp.sqrt(self.ivar)  # (row,col,channels)
 				self.moving_mean = mean
 				self.moving_var = var
 				self.xnorm = self.xmu * self.istd  # (batches,row,col,channels)
 			else:
 				self.xmu = inp - self.moving_mean  # (batches,row,col,channels)	## all this is just for proper shape while model.free()
 				self.ivar = 1 / (self.moving_var + self.epsilon)
-				self.istd = cp.sqrt(self.ivar)  # (row,col,channels)
+				self.istd = jnp.sqrt(self.ivar)  # (row,col,channels)
 				self.xnorm = self.xmu * self.istd
-			# self.xnorm=(inp-self.moving_mean)/cp.sqrt(self.moving_var+self.epsilon)
+			# self.xnorm=(inp-self.moving_mean)/jnp.sqrt(self.moving_var+self.epsilon)
 		return self.xnorm * self.weights + self.biases
 
 	def backprop(self, grads, do_d_inp=True):

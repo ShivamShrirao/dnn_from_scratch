@@ -29,7 +29,7 @@ class Conv2D(Layer):
 			name=None,
 			out_row=None,
 			out_col=None,
-			dtype=cp.float32,
+			dtype=jnp.float32,
 			**kwargs
 			):
 		# input_shape[row,col,channels], kernels(channels,ksz[0],ksz[1],num_kernels), biases[1,num_ker], stride[row,col]
@@ -49,7 +49,7 @@ class Conv2D(Layer):
 		self.biases = kwargs.get('biases')
 		if self.kernels is None:
 			kernel_size = kwargs.get('kernel_size')
-			if np.isscalar(kernel_size):
+			if jnp.isscalar(kernel_size):
 				self.kernel_size = (kernel_size, kernel_size)
 			else:
 				self.kernel_size = kernel_size
@@ -60,7 +60,7 @@ class Conv2D(Layer):
 			self.kernel_size = self.kernels.shape[1:3]
 		self.weights = self.kernels
 		self.bias_is_not_0 = True
-		if cp.isscalar(self.biases):  # TODO: DO BETTER CHECK
+		if jnp.isscalar(self.biases):  # TODO: DO BETTER CHECK
 			if self.biases == 0:
 				self.bias_is_not_0 = False
 		self.dilation = kwargs.get('dilation')
@@ -78,11 +78,11 @@ class Conv2D(Layer):
 		if kwargs.get('backp'):
 			self.backp_stream = stream_maps.get_next_stream()
 			self.grad_event = stream_maps.default_stream.record()
-			self.w_m = cp.zeros_like(self.weights, dtype=self.dtype)
-			self.w_v = cp.zeros_like(self.weights, dtype=self.dtype)
+			self.w_m = jnp.zeros_like(self.weights, dtype=self.dtype)
+			self.w_v = jnp.zeros_like(self.weights, dtype=self.dtype)
 			if self.bias_is_not_0:
-				self.b_m = cp.zeros_like(self.biases, dtype=self.dtype)
-				self.b_v = cp.zeros_like(self.biases, dtype=self.dtype)
+				self.b_m = jnp.zeros_like(self.biases, dtype=self.dtype)
+				self.b_v = jnp.zeros_like(self.biases, dtype=self.dtype)
 			self.init_back()
 
 	def cal_padding(self, sz, ksz, stride, dilation):
@@ -98,7 +98,7 @@ class Conv2D(Layer):
 
 	# @property
 	# def bias_is_not_0(self):
-	# 	if cp.isscalar(self.biases):
+	# 	if jnp.isscalar(self.biases):
 	# 		if self.biases==0:
 	# 			return False
 	# 	return True
@@ -114,10 +114,10 @@ class Conv2D(Layer):
 				out_col=self.col)
 
 	# TODO - Separate kernel and bias init.
-	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=cp.float32):
-		weights = std * cp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels, dtype=dtype) + mean
-		# weights/=cp.sqrt(num_inp_channels)
-		bias = std * cp.random.randn(1, num_kernels, dtype=dtype) + mean
+	def init_kernel_bias(self, num_inp_channels, kernel_size, num_kernels, mean=0, std=0.01, dtype=jnp.float32):
+		weights = std * jnp.random.randn(num_inp_channels, kernel_size[0], kernel_size[1], num_kernels, dtype=dtype) + mean
+		# weights/=jnp.sqrt(num_inp_channels)
+		bias = std * jnp.random.randn(1, num_kernels, dtype=dtype) + mean
 		return weights.astype(dtype, copy=False), bias.astype(dtype, copy=False)
 
 	def cal_outsize(self, sz, ksz, stride, pad, dilation=1):
@@ -128,20 +128,20 @@ class Conv2D(Layer):
 		"""
 		Simple implementation, just do im2col and then dot product.
 		"""
-		inp = cp.ascontiguousarray(inp.transpose(0, 3, 1, 2))
+		inp = jnp.ascontiguousarray(inp.transpose(0, 3, 1, 2))
 		self.inp = inp
 		# inp[batches,channels,row,col]
 		self.batches, self.channels, self.row, self.col = self.inp.shape
-		coled = cp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col),
+		coled = jnp.empty((self.batches, self.channels, self.kernel_size[0], self.kernel_size[1], self.out_row, self.out_col),
 				dtype=self.dtype)
 		im2col(self.inp.reduced_view(), self.row, self.col, self.out_row, self.out_col,
 				self.kernel_size[0], self.kernel_size[1], self.stride[0], self.stride[1], self.padding[0],
 				self.padding[1],
 				self.dilation[0], self.dilation[1],
 				coled)
-		self.z_out = cp.tensordot(coled, self.kernels, ((1, 2, 3), (0, 1, 2)))
+		self.z_out = jnp.tensordot(coled, self.kernels, ((1, 2, 3), (0, 1, 2)))
 		if self.bias_is_not_0:
-			self.z_out = cp.add(self.z_out, self.biases)
+			self.z_out = jnp.add(self.z_out, self.biases)
 		# assert self.z_out.shape == (self.batches, self.out_row, self.out_col, self.num_kernels)
 		self.a_out = self.activation(self.z_out)
 		return self.a_out  # a_out[self.batches,self.out_row,self.out_col,self.num_kernels]
@@ -174,7 +174,7 @@ class Conv2D(Layer):
 			# self.d_c_w/= self.batches		# take mean change over batches
 		# Backprop for inp.	grads[batches,esz,esz,num_kernels]	self.flipped[num_kernels,kernel_size[0],kernel_size[1],channels]
 		if do_d_inp:
-			d_inputs = cp.ascontiguousarray(self.d_inp.forward(grads))
+			d_inputs = jnp.ascontiguousarray(self.d_inp.forward(grads))
 		# assert d_inputs.shape == (self.batches, self.row, self.col, self.channels), f"{(self.batches, self.row, self.col, self.channels)},{d_inputs.shape}"
 		else:
 			d_inputs = 0

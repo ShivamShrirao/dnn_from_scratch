@@ -1,6 +1,6 @@
 # Deep Learning Library from scratch
 
-A High Level Deep Learning library made from scratch (just using numpy/cupy). Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
+A High Level Deep Learning library made in jax. Backprop is fully automated. Just specify layers, loss function and optimizers. Model will backpropagate itself.
 Just made to learn deep working and backpropogation of CNNs and various machine learning algorithms. Deriving and making it gave alot of insight to how it all works. Will keep adding new networks and algorithms in future.
 
 ## Installation
@@ -32,7 +32,6 @@ from nnet.layers import Conv2D,MaxPool,Flatten,Dense,Dropout,BatchNormalization,
 from nnet import optimizers
 from nnet import functions
 import numpy as np
-import cupy as cp
 ```
 
 ### Make Sequential Model

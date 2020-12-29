@@ -23,7 +23,8 @@ class Dropout(Layer):
 
 	def forward(self, inp, training=True):
 		if training:		# generate mask with rate probability
-			self.mask = (self.scale * (cp.random.random(inp.shape, dtype=self.dtype) > self.rate)).astype(self.dtype, copy=False)
+			# self.mask = (self.scale * (cp.random.random(inp.shape, dtype=self.dtype) > self.rate)).astype(self.dtype, copy=False)
+			self.mask = self.scale * cp.random.binomial(1, 1-self.rate, inp.shape).astype(self.dtype, copy=False)
 			return inp * self.mask
 		else:
 			self.mask.fill(1.0)
